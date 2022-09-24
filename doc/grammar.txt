@@ -1,0 +1,31 @@
+----------------------------META-GRAMMAR-----------------------------
+
+Key:
+    | "?" : Zero Or One Times
+    | "*" : Zero Or More Times
+    | "+" : One Or More Times
+
+-------------------------------GRAMMAR-------------------------------
+
+file:
+    | program EOF
+
+program:
+    | statement*
+
+statement:
+    | import_statement
+    | tune_statement
+    | action_statement
+
+import_statement:
+    | "import" IDENTIFIER ";"
+
+tune_statement:
+    | "tune" IDENTIFIER "{" statement+ "}"
+
+action_statement:
+    | play_statement
+
+play_statement:
+    | "play" NOTE DURATION ";"
