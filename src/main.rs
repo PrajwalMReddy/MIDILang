@@ -1,11 +1,18 @@
+mod tokenizer;
+mod compiler;
+
 use std::env;
 use std::fs;
+
+use crate::tokenizer::scanner;
+use crate::compiler::parser;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
     let contents = read_file(&args);
 
-    println!("{}", contents);
+    scanner::lex();
+    parser::parse();
 }
 
 fn read_file(args: &Vec<String>) -> String {
