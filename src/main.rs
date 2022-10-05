@@ -1,10 +1,11 @@
-mod lexer;
-mod parser;
-
 use std::env;
 use std::fs;
 
 use crate::parser::CompilerResult;
+
+mod lexer;
+mod parser;
+mod scanner;
 
 fn main() {
     let args: Vec<String> = env::args().collect();

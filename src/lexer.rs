@@ -1,28 +1,21 @@
+use crate::scanner::Scanner;
+
 pub struct Token {
-    ttype: TokenType,
-    literal: String,
-    line: u32,
+    pub ttype: TokenType,
+    pub literal: String,
+    pub line: u32,
 }
 
 pub enum TokenType {
     TkPlay, TkTune, TkImport, // Keywords
     TkIdentifier, TkNumber, // Data Tokens
     TkLeftBrace, TkRightBrace, TkSemicolon, // Punctuation
-}
-
-struct Scanner {
-    file: String,
-    start: usize,
-    current: usize,
-    line: u32,
-}
-
-impl Scanner {
+    TkEof, TkError, // Special Tokens
 }
 
 fn init_scanner(file: &String) -> Scanner {
     Scanner {
-        file: String::from(file),
+        file: file.chars().collect(),
         start: 0,
         current: 0,
         line: 0,
@@ -30,8 +23,13 @@ fn init_scanner(file: &String) -> Scanner {
 }
 
 pub fn lex(file: String) -> Vec<Token> {
-    let scanner = init_scanner(&file);
-    let tokens: Vec<Token> = Vec::new();
+    let mut scanner = init_scanner(&file);
+    let mut tokens: Vec<Token> = Vec::new();
 
+    while !scanner.is_at_end() {
+        tokens.push(scanner.scan_token());
+    }
+
+    tokens.push(scanner.make_token(TokenType::TkEof));
     tokens
 }
