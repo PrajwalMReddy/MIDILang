@@ -23,9 +23,9 @@ impl Scanner {
         }
 
         match c {
-            '{' => self.make_token(TokenType::TkLeftBrace),
-            '}' => self.make_token(TokenType::TkRightBrace),
-            ';' => self.make_token(TokenType::TkSemicolon),
+            '{' => self.make_token(TokenType::LeftBrace),
+            '}' => self.make_token(TokenType::RightBrace),
+            ';' => self.make_token(TokenType::Semicolon),
 
             _ => self.error_token(String::from("Unexpected Character"))
         }
@@ -38,11 +38,11 @@ impl Scanner {
 
         match self.file[self.start..self.current] {
             // Temporary Hack To Get The Types To Match
-            ['i','m','p','o','r','t'] => self.make_token(TokenType::TkImport),
-            ['p','l','a','y'] => self.make_token(TokenType::TkPlay),
-            ['t','u','n','e'] => self.make_token(TokenType::TkTune),
+            ['i','m','p','o','r','t'] => self.make_token(TokenType::Import),
+            ['p','l','a','y'] => self.make_token(TokenType::Play),
+            ['t','u','n','e'] => self.make_token(TokenType::Tune),
 
-            _ => self.make_token(TokenType::TkIdentifier),
+            _ => self.make_token(TokenType::Identifier),
         }
     }
 
@@ -51,7 +51,7 @@ impl Scanner {
             self.advance();
         }
 
-        self.make_token(TokenType::TkNumber)
+        self.make_token(TokenType::Number)
     }
 
     fn skip_white_space(&mut self) {
@@ -103,7 +103,7 @@ impl Scanner {
 
     fn error_token(&self, msg: String) -> Token {
         Token {
-            ttype: TokenType::TkError,
+            ttype: TokenType::Error,
             literal: msg,
             line: self.line,
         }

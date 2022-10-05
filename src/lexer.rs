@@ -7,10 +7,10 @@ pub struct Token {
 }
 
 pub enum TokenType {
-    TkPlay, TkTune, TkImport, // Keywords
-    TkIdentifier, TkNumber, // Data Tokens
-    TkLeftBrace, TkRightBrace, TkSemicolon, // Punctuation
-    TkEof, TkError, // Special Tokens
+    Play, Tune, Import, // Keywords
+    Identifier, Number, // Data Tokens
+    LeftBrace, RightBrace, Semicolon, // Punctuation
+    Eof, Error, // Special Tokens
 }
 
 fn init_scanner(file: &String) -> Scanner {
@@ -30,6 +30,6 @@ pub fn lex(file: String) -> Vec<Token> {
         tokens.push(scanner.scan_token());
     }
 
-    tokens.push(scanner.make_token(TokenType::TkEof));
+    tokens.push(scanner.make_token(TokenType::Eof));
     tokens
 }

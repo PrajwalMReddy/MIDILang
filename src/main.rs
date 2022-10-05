@@ -1,7 +1,6 @@
 use std::env;
 use std::fs;
-
-use crate::parser::CompilerResult;
+use std::path::Path;
 
 mod lexer;
 mod parser;
@@ -15,16 +14,10 @@ fn main() {
     }
 
     let contents = read_file(&args);
+    let path = Path::new(&args[1]).file_stem().expect("Unable To Read File Stem").to_str().unwrap();
 
     let tokens = lexer::lex(contents);
-    match parser::parse(tokens) {
-        CompilerResult::CrSuccess => {
-            println!(".midi File Generated Successfully");
-        }
-        CompilerResult::CrFailure(msg) => {
-            panic!("{}", msg);
-        }
-    };
+    parser::parse(tokens, path);
 }
 
 fn read_file(args: &Vec<String>) -> String {
