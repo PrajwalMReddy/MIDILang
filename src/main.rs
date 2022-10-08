@@ -3,7 +3,7 @@ use std::fs;
 use std::path::Path;
 
 mod lexer;
-mod parser;
+mod compiler;
 mod scanner;
 
 fn main() {
@@ -17,7 +17,7 @@ fn main() {
     let path = Path::new(&args[1]).file_stem().expect("Unable To Read File Stem").to_str().unwrap();
 
     let tokens = lexer::lex(contents);
-    parser::parse(tokens, path);
+    compiler::compile(tokens, path);
 }
 
 fn read_file(args: &Vec<String>) -> String {
