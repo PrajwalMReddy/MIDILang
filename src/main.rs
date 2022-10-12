@@ -5,6 +5,7 @@ use std::path::Path;
 mod lexer;
 mod compiler;
 mod scanner;
+mod parser;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -17,7 +18,8 @@ fn main() {
     let path = Path::new(&args[1]).file_stem().expect("Unable To Read File Stem").to_str().unwrap();
 
     let tokens = lexer::lex(contents);
-    compiler::compile(tokens, path);
+    let statements = parser::parse(tokens);
+    compiler::compile(path);
 }
 
 fn read_file(args: &Vec<String>) -> String {

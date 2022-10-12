@@ -2,33 +2,31 @@ use std::fs::File;
 use std::io::Write;
 
 use crate::lexer::Token;
+use crate::parser::PlayStmt;
 
-struct Parser {
+struct Compiler {
     file: File,
     file_bytes: Vec<u8>,
-    tokens: Vec<Token>,
+    statements: Vec<PlayStmt>,
     current: u32,
 }
 
-fn init_parser(tokens: Vec<Token>, path: &str) -> Parser {
-    Parser {
+fn init_compiler(statements: Vec<PlayStmt>, path: &str) -> Compiler {
+    Compiler {
         file: File::create(path.to_owned() + ".mid").expect("Unable To Create .midi File"),
         file_bytes: vec![],
-        tokens,
+        statements,
         current: 0,
     }
 }
 
-pub fn compile(tokens: Vec<Token>, path: &str) {
-    let mut parser = init_parser(tokens, path);
-
-    header_chunk(&mut parser);
-    parse(&mut parser);
-
-    parser.file.write(&mut parser.file_bytes).expect("Could Not Generate .midi File");
+pub fn compile(statements: Vec<PlayStmt>, path: &str) {
+    let mut compiler = init_compiler(statements, path);
+    header_chunk(&mut compiler);
+    compiler.file.write(&mut compiler.file_bytes).expect("Could Not Generate .midi File");
 }
 
-fn header_chunk(parser: &mut Parser) {
+fn header_chunk(compiler: &mut Compiler) {
     let mut header: Vec<u8> = vec![
         /*-----Header-Data----//-------Value-|-Description--------*/
 
@@ -39,24 +37,5 @@ fn header_chunk(parser: &mut Parser) {
         0b00000000_1100010_0, // 98_0 | 98 Ticks Per Quarter Note
     ];
 
-    parser.file_bytes.append(&mut header);
-}
-
-fn parse(parser: &mut Parser) {
-    track_chunk(parser);
-    program_node(parser)
-}
-
-// Sets Up The Track Chunk
-fn track_chunk(parser: &mut Parser) {
-    let mut track: Vec<u8> = vec![
-        0x4d, 0x54, 0x72, 0x6b, // MTrk | ASCII Track Chunk Type
-        0x00, 0x00, 0x00, 0x00, // TBOL | Number Of Bytes In The Track Chunk
-    ];
-
-    parser.file_bytes.append(&mut track);
-}
-
-// Compiles The Actual Track Events
-fn program_node(parser: &mut Parser) {
+    compiler.file_bytes.append(&mut header);
 }
