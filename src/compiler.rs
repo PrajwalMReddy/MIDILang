@@ -20,22 +20,24 @@ fn init_compiler(statements: Vec<PlayStmt>, path: &str) -> Compiler {
     }
 }
 
-pub fn compile(statements: Vec<PlayStmt>, path: &str) {
-    let mut compiler = init_compiler(statements, path);
-    header_chunk(&mut compiler);
-    compiler.file.write(&mut compiler.file_bytes).expect("Could Not Generate .midi File");
+impl Compiler {
+    fn header_chunk(compiler: &mut Compiler) {
+        let mut header: Vec<u8> = vec![
+            /*-----Header-Data----//-------Value-|-Description--------*/
+
+            0x4d, 0x54, 0x68, 0x64, // MThd | ASCII Header Chunk Type
+            0x00, 0x00, 0x00, 0x06, // 6 | 32 Bit Header Size
+            0x00, 0x00, // 0 | 16 Bit File Format | Single Track
+            0x00, 0x01, // 1 | Number Of Track Chunks
+            0b00000000_1100010_0, // 98_0 | 98 Ticks Per Quarter Note
+        ];
+
+        compiler.file_bytes.append(&mut header);
+    }
 }
 
-fn header_chunk(compiler: &mut Compiler) {
-    let mut header: Vec<u8> = vec![
-        /*-----Header-Data----//-------Value-|-Description--------*/
-
-        0x4d, 0x54, 0x68, 0x64, // MThd | ASCII Header Chunk Type
-        0x00, 0x00, 0x00, 0x06, // 6 | 32 Bit Header Size
-        0x00, 0x00, // 0 | 16 Bit File Format | Single Track
-        0x00, 0x01, // 1 | Number Of Track Chunks
-        0b00000000_1100010_0, // 98_0 | 98 Ticks Per Quarter Note
-    ];
-
-    compiler.file_bytes.append(&mut header);
+pub fn compile(statements: Vec<PlayStmt>, path: &str) {
+    let mut compiler = init_compiler(statements, path);
+    Compiler::header_chunk(&mut compiler);
+    compiler.file.write(&mut compiler.file_bytes).expect("Could Not Generate .midi File");
 }

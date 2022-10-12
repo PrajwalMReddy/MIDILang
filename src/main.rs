@@ -4,7 +4,6 @@ use std::path::Path;
 
 mod lexer;
 mod compiler;
-mod scanner;
 mod parser;
 
 fn main() {
@@ -19,7 +18,7 @@ fn main() {
 
     let tokens = lexer::lex(contents);
     let statements = parser::parse(tokens);
-    compiler::compile(path);
+    compiler::compile(statements, path);
 }
 
 fn read_file(args: &Vec<String>) -> String {
