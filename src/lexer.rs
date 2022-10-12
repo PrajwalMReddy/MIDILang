@@ -5,12 +5,14 @@ pub struct Scanner {
     pub line: u32,
 }
 
+#[derive(Clone)]
 pub struct Token {
     pub ttype: TokenType,
     pub literal: String,
     pub line: u32,
 }
 
+#[derive(Clone)]
 pub enum TokenType {
     Play, Tune, Import, // Keywords
     Identifier, Number, // Data Tokens

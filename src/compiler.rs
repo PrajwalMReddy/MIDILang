@@ -5,23 +5,21 @@ use crate::lexer::Token;
 use crate::parser::PlayStmt;
 
 struct Compiler {
-    file: File,
     file_bytes: Vec<u8>,
     statements: Vec<PlayStmt>,
     current: u32,
 }
 
-fn init_compiler(statements: Vec<PlayStmt>, path: &str) -> Compiler {
+fn init_compiler(statements: Vec<PlayStmt>) -> Compiler {
     Compiler {
-        file: File::create(path.to_owned() + ".mid").expect("Unable To Create .midi File"),
-        file_bytes: vec![],
+        file_bytes: Vec::new(),
         statements,
         current: 0,
     }
 }
 
 impl Compiler {
-    fn header_chunk(compiler: &mut Compiler) {
+    fn header_chunk(&mut self) {
         let mut header: Vec<u8> = vec![
             /*-----Header-Data----//-------Value-|-Description--------*/
 
@@ -32,12 +30,14 @@ impl Compiler {
             0b00000000_1100010_0, // 98_0 | 98 Ticks Per Quarter Note
         ];
 
-        compiler.file_bytes.append(&mut header);
+        self.file_bytes.append(&mut header);
     }
 }
 
 pub fn compile(statements: Vec<PlayStmt>, path: &str) {
-    let mut compiler = init_compiler(statements, path);
-    Compiler::header_chunk(&mut compiler);
-    compiler.file.write(&mut compiler.file_bytes).expect("Could Not Generate .midi File");
+    let mut compiler = init_compiler(statements);
+    compiler.header_chunk();
+
+    let mut file = File::create(path.to_owned() + ".mid").expect("Unable To Create .midi File");
+    file.write(&mut compiler.file_bytes).expect("Could Not Generate .midi File");
 }
