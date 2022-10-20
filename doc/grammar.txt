@@ -28,4 +28,4 @@ action_statement:
     | play_statement
 
 play_statement:
-    | "play" NOTE DURATION ";"
+    | "play" NOTE DURATION VELOCITY ";"

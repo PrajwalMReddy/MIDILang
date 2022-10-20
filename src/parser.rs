@@ -7,9 +7,10 @@ struct Parser {
 }
 
 pub struct PlayStmt {
-    token: Token,
-    note: Token,
-    duration: Token,
+    pub token: Token,
+    pub note: Token,
+    pub duration: Token,
+    pub velocity: Token,
 }
 
 fn init_parser(tokens: Vec<Token>) -> Parser {
@@ -25,11 +26,15 @@ impl Parser {
         let token = self.advance();
         let note = self.advance();
         let duration = self.advance();
+        let velocity = self.advance();
+
+        self.advance(); // Advance Past The Semicolon
 
         PlayStmt {
             token,
             note,
             duration,
+            velocity,
         }
     }
 

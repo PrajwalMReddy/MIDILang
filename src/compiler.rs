@@ -1,8 +1,6 @@
-use std::alloc::handle_alloc_error;
 use std::fs::File;
 use std::io::Write;
 
-use crate::lexer::Token;
 use crate::parser::PlayStmt;
 
 struct Compiler {
@@ -36,11 +34,13 @@ impl Compiler {
     }
 
     fn track_chunk(&mut self) {
+        let track_length: u8 = ((self.statements.len() * 8) + 4) as u8; // TODO Properly Convert This To Vec<u8>
+
         let mut header: Vec<u8> = vec![
             /*-----Track-Data----//-------Value-|-Description--------*/
 
             0x4d, 0x54, 0x72, 0x6b, // MTrk | ASCII Track Chunk Type
-            0x00, 0x00, 0x00, 0x0c, // TBOL | Track Length
+            0x00, 0x00, 0x00, track_length, // Track Length
         ];
 
         self.file_bytes.append(&mut header);
@@ -54,21 +54,28 @@ impl Compiler {
     }
 
     fn play_stmt(&mut self) {
-        let mut track_event: Vec<u8> = vec![
-            /*----Event-Data---//----Value-|-Description-----*/
+        for play_stmt in &self.statements {
+            // TODO Add Validation Checks
+            let note: u8 = play_stmt.note.literal.parse().unwrap();
+            let duration: u8 = play_stmt.duration.literal.parse().unwrap();
+            let velocity: u8 = play_stmt.velocity.literal.parse().unwrap();
 
-            0x00, // 0 | Elapsed Time From The Previous Event
-            0x9_0, // 9_0 | Note On Event On Channel 1 - Piano
-            0x3c, // 60 | Note - Middle C
-            0x40, // 64 | Velocity
+            let mut track_event: Vec<u8> = vec![
+                /*----Event-Data---//----Value-|-Description-----*/
 
-            0x62, // 98 | Elapsed Time From The Previous Event
-            0x8_0, // 8 | Note Off Event On Channel 1 - Piano
-            0x3c, // 60 | Note - Middle C
-            0x00, // 0 | Velocity
-        ];
+                0x00, // 0 | Elapsed Time From The Previous Event
+                0x9_0, // 9_0 | Note On Event On Channel 1 - Piano
+                note, // Note To Be Played
+                velocity, // Velocity To Be Played At
 
-        self.file_bytes.append(&mut track_event);
+                duration, // Elapsed Time From The Previous Event
+                0x8_0, // 8 | Note Off Event On Channel 1 - Piano
+                note, // Note To Be Turned Off
+                0x00, // 0 | Velocity
+            ];
+
+            self.file_bytes.append(&mut track_event);
+        }
     }
 
     fn clean_up(&mut self) {
