@@ -16,6 +16,7 @@ program:
 statement:
     | import_statement
     | tune_statement
+    | variable_statement
     | action_statement
 
 import_statement:
@@ -24,8 +25,12 @@ import_statement:
 tune_statement:
     | "tune" IDENTIFIER "{" statement+ "}"
 
+variable_statement:
+    | "var" IDENTIFIER "=" NUMBER ";"
+
 action_statement:
     | play_statement
 
 play_statement:
     | "play" NOTE DURATION VELOCITY ";"
+    | "play" IDENTIFIER ";"
