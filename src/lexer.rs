@@ -5,14 +5,14 @@ pub struct Scanner {
     pub line: u32,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Token {
     pub ttype: TokenType,
     pub literal: String,
     pub line: u32,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum TokenType {
     Play, Tune, Import, // Keywords
     Identifier, Number, // Data Tokens
@@ -33,6 +33,11 @@ impl Scanner {
     pub fn scan_token(&mut self) -> Token {
         self.skip_white_space();
         self.start = self.current;
+
+        if self.is_at_end() {
+            return self.make_token(TokenType::Eof);
+        }
+
         let c = self.advance();
 
         if self.is_alpha(c) {
@@ -135,10 +140,13 @@ pub fn lex(file: String) -> Vec<Token> {
     let mut scanner = init_scanner(&file);
     let mut tokens: Vec<Token> = Vec::new();
 
-    while !scanner.is_at_end() {
+    loop {
         tokens.push(scanner.scan_token());
+
+        if tokens[tokens.len() - 1].ttype == TokenType::Eof {
+            break;
+        }
     }
 
-    tokens.push(scanner.make_token(TokenType::Eof));
     tokens
 }

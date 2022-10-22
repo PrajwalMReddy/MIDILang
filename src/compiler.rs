@@ -6,14 +6,12 @@ use crate::parser::PlayStmt;
 struct Compiler {
     file_bytes: Vec<u8>,
     statements: Vec<PlayStmt>,
-    current: u32,
 }
 
 fn init_compiler(statements: Vec<PlayStmt>) -> Compiler {
     Compiler {
         file_bytes: Vec::new(),
         statements,
-        current: 0,
     }
 }
 
@@ -34,13 +32,14 @@ impl Compiler {
     }
 
     fn track_chunk(&mut self) {
-        let track_length: u8 = ((self.statements.len() * 8) + 4) as u8; // TODO Properly Convert This To Vec<u8>
+        let track_length: u32 = ((self.statements.len() * 8) + 4) as u32;
+        let tlb: [u8; 4] = track_length.to_be_bytes();
 
         let mut header: Vec<u8> = vec![
             /*-----Track-Data----//-------Value-|-Description--------*/
 
             0x4d, 0x54, 0x72, 0x6b, // MTrk | ASCII Track Chunk Type
-            0x00, 0x00, 0x00, track_length, // Track Length
+            tlb[0], tlb[1], tlb[2], tlb[3], // Track Length
         ];
 
         self.file_bytes.append(&mut header);
@@ -55,22 +54,29 @@ impl Compiler {
 
     fn play_stmt(&mut self) {
         for play_stmt in &self.statements {
-            // TODO Add Validation Checks
-            let note: u8 = play_stmt.note.literal.parse().unwrap();
-            let duration: u8 = play_stmt.duration.literal.parse().unwrap();
-            let velocity: u8 = play_stmt.velocity.literal.parse().unwrap();
+            let note: u32 = play_stmt.note.literal.parse().unwrap();
+            let duration: u32 = play_stmt.duration.literal.parse().unwrap();
+            let velocity: u32 = play_stmt.velocity.literal.parse().unwrap();
+
+            if note > 127 {
+                panic!("Note Value Cannot Be More Than 127");
+            } else if duration > 127 {
+                panic!("Duration Value Cannot Be More Than 127");
+            } else if velocity > 127 {
+                panic!("Velocity Value Cannot Be More Than 127");
+            }
 
             let mut track_event: Vec<u8> = vec![
                 /*----Event-Data---//----Value-|-Description-----*/
 
                 0x00, // 0 | Elapsed Time From The Previous Event
-                0x9_0, // 9_0 | Note On Event On Channel 1 - Piano
-                note, // Note To Be Played
-                velocity, // Velocity To Be Played At
+                0x9_0, // 9_0 | Note On Event
+                note as u8, // Note To Be Played
+                velocity as u8, // Velocity To Be Played At
 
-                duration, // Elapsed Time From The Previous Event
-                0x8_0, // 8 | Note Off Event On Channel 1 - Piano
-                note, // Note To Be Turned Off
+                duration as u8, // Elapsed Time From The Previous Event
+                0x8_0, // 8 | Note Off Event
+                note as u8, // Note To Be Turned Off
                 0x00, // 0 | Velocity
             ];
 

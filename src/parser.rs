@@ -1,4 +1,5 @@
 use crate::lexer::Token;
+use crate::lexer::TokenType;
 
 struct Parser {
     tokens: Vec<Token>,
@@ -22,6 +23,13 @@ fn init_parser(tokens: Vec<Token>) -> Parser {
 }
 
 impl Parser {
+    fn parse(&mut self) {
+        while self.peek().ttype != TokenType::Eof {
+            let play_stmt = self.play_statement();
+            self.statements.push(play_stmt);
+        }
+    }
+
     fn play_statement(&mut self) -> PlayStmt {
         let token = self.advance();
         let note = self.advance();
@@ -38,6 +46,10 @@ impl Parser {
         }
     }
 
+    fn peek(&mut self) -> Token {
+        self.tokens[self.current].clone()
+    }
+
     fn advance(&mut self) -> Token {
         self.current = self.current + 1;
         self.tokens[self.current - 1].clone()
@@ -46,9 +58,7 @@ impl Parser {
 
 pub fn parse(tokens: Vec<Token>) -> Vec<PlayStmt> {
     let mut parser = init_parser(tokens);
-
-    let play_stmt = parser.play_statement();
-    parser.statements.push(play_stmt);
+    parser.parse();
 
     parser.statements
 }
