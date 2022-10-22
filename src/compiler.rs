@@ -1,17 +1,20 @@
 use std::fs::File;
 use std::io::Write;
+use crate::error::ErrorHandler;
 
 use crate::parser::PlayStmt;
 
 struct Compiler {
     file_bytes: Vec<u8>,
     statements: Vec<PlayStmt>,
+    errors: ErrorHandler,
 }
 
-fn init_compiler(statements: Vec<PlayStmt>) -> Compiler {
+fn init_compiler(statements: Vec<PlayStmt>, errors: ErrorHandler) -> Compiler {
     Compiler {
         file_bytes: Vec::new(),
         statements,
+        errors,
     }
 }
 
@@ -53,17 +56,21 @@ impl Compiler {
     }
 
     fn play_stmt(&mut self) {
+        let mut temp_errors: Vec<(&str, u32)> = Vec::new();
+
         for play_stmt in &self.statements {
+            let line = play_stmt.token.line;
             let note: u32 = play_stmt.note.literal.parse().unwrap();
             let duration: u32 = play_stmt.duration.literal.parse().unwrap();
             let velocity: u32 = play_stmt.velocity.literal.parse().unwrap();
 
             if note > 127 {
-                panic!("Note Value Cannot Be More Than 127");
+                temp_errors.push(("Note Value Cannot Be More Than 127", line));
             } else if duration > 127 {
-                panic!("Duration Value Cannot Be More Than 127");
+                // TODO Temporary Restriction
+                temp_errors.push(("Duration Value Cannot Be More Than 127", line));
             } else if velocity > 127 {
-                panic!("Velocity Value Cannot Be More Than 127");
+                temp_errors.push(("Velocity Value Cannot Be More Than 127", line));
             }
 
             let mut track_event: Vec<u8> = vec![
@@ -82,18 +89,24 @@ impl Compiler {
 
             self.file_bytes.append(&mut track_event);
         }
+
+        for (msg, line) in temp_errors {
+            self.new_error(msg, line);
+        }
     }
 
-    fn clean_up(&mut self) {
+    fn new_error(&mut self, msg: &str, line: u32) {
+        self.errors.add_error(String::from("Compiler Error"), String::from(msg), line);
     }
 }
 
-pub fn compile(statements: Vec<PlayStmt>, path: &str) {
-    let mut compiler = init_compiler(statements);
+pub fn compile(statements: Vec<PlayStmt>, path: &str, errors: ErrorHandler) -> ErrorHandler {
+    let mut compiler = init_compiler(statements, errors);
     compiler.header_chunk();
     compiler.track_chunk();
-    compiler.clean_up();
 
     let mut file = File::create(path.to_owned() + ".mid").expect("Unable To Create .midi File");
     file.write(&mut compiler.file_bytes).expect("Could Not Generate .midi File");
+
+    compiler.errors
 }

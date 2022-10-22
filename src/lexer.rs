@@ -1,8 +1,11 @@
+use crate::error::ErrorHandler;
+
 pub struct Scanner {
     pub file: Vec<char>,
     pub start: usize,
     pub current: usize,
     pub line: u32,
+    pub errors: ErrorHandler,
 }
 
 #[derive(Clone, Debug)]
@@ -20,12 +23,13 @@ pub enum TokenType {
     Eof, Error, // Special Tokens
 }
 
-fn init_scanner(file: &String) -> Scanner {
+fn init_scanner(file: &String, errors: ErrorHandler) -> Scanner {
     Scanner {
         file: file.chars().collect(),
         start: 0,
         current: 0,
-        line: 0,
+        line: 1,
+        errors,
     }
 }
 
@@ -127,7 +131,9 @@ impl Scanner {
         }
     }
 
-    fn error_token(&self, msg: String) -> Token {
+    fn error_token(&mut self, msg: String) -> Token {
+        self.errors.add_error(String::from("Lexer Error"), msg.clone(), self.line);
+
         Token {
             ttype: TokenType::Error,
             literal: msg,
@@ -136,8 +142,8 @@ impl Scanner {
     }
 }
 
-pub fn lex(file: String) -> Vec<Token> {
-    let mut scanner = init_scanner(&file);
+pub fn lex(file: String, errors: ErrorHandler) -> (Vec<Token>, ErrorHandler) {
+    let mut scanner = init_scanner(&file, errors);
     let mut tokens: Vec<Token> = Vec::new();
 
     loop {
@@ -148,5 +154,5 @@ pub fn lex(file: String) -> Vec<Token> {
         }
     }
 
-    tokens
+    (tokens, scanner.errors)
 }

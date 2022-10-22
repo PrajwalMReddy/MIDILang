@@ -1,3 +1,4 @@
+use crate::error::ErrorHandler;
 use crate::lexer::Token;
 use crate::lexer::TokenType;
 
@@ -5,6 +6,7 @@ struct Parser {
     tokens: Vec<Token>,
     statements: Vec<PlayStmt>,
     current: usize,
+    errors: ErrorHandler,
 }
 
 pub struct PlayStmt {
@@ -14,11 +16,12 @@ pub struct PlayStmt {
     pub velocity: Token,
 }
 
-fn init_parser(tokens: Vec<Token>) -> Parser {
+fn init_parser(tokens: Vec<Token>, errors: ErrorHandler) -> Parser {
     Parser {
         tokens,
         statements: Vec::new(),
         current: 0,
+        errors,
     }
 }
 
@@ -56,9 +59,9 @@ impl Parser {
     }
 }
 
-pub fn parse(tokens: Vec<Token>) -> Vec<PlayStmt> {
-    let mut parser = init_parser(tokens);
+pub fn parse(tokens: Vec<Token>, errors: ErrorHandler) -> (Vec<PlayStmt>, ErrorHandler) {
+    let mut parser = init_parser(tokens, errors);
     parser.parse();
 
-    parser.statements
+    (parser.statements, parser.errors)
 }
