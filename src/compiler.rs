@@ -1,19 +1,44 @@
+use std::env::var;
 use std::fs::File;
 use std::io::Write;
 use crate::error::ErrorHandler;
-
-use crate::parser::PlayStmt;
+use crate::ast::Program;
+use crate::lexer::Token;
 
 struct Compiler {
     file_bytes: Vec<u8>,
-    statements: Vec<PlayStmt>,
+    program: Program,
+    symbol_table: SymbolTable,
     errors: ErrorHandler,
 }
 
-fn init_compiler(statements: Vec<PlayStmt>, errors: ErrorHandler) -> Compiler {
+struct SymbolTable {
+    variables: Vec<Variable>,
+}
+
+struct Variable {
+    identifier: Token,
+    value: Token,
+}
+
+impl SymbolTable {
+    fn add_variable(&mut self, identifier: Token, value: Token) {
+        self.variables.push(
+            Variable {
+                identifier,
+                value,
+            }
+        );
+    }
+}
+
+fn init_compiler(program: Program, errors: ErrorHandler) -> Compiler {
     Compiler {
         file_bytes: Vec::new(),
-        statements,
+        program,
+        symbol_table: SymbolTable {
+            variables: Vec::new(),
+        },
         errors,
     }
 }
@@ -35,7 +60,7 @@ impl Compiler {
     }
 
     fn track_chunk(&mut self) {
-        let track_length: u32 = ((self.statements.len() * 8) + 4) as u32;
+        let track_length: u32 = ((self.program.statements.action_statements.play_statements.len() * 8) + 4) as u32;
         let tlb: [u8; 4] = track_length.to_be_bytes();
 
         let mut header: Vec<u8> = vec![
@@ -46,6 +71,8 @@ impl Compiler {
         ];
 
         self.file_bytes.append(&mut header);
+
+        self.var_stmt();
         self.play_stmt();
 
         let mut end_of_track: Vec<u8> = vec![
@@ -55,10 +82,16 @@ impl Compiler {
         self.file_bytes.append(&mut end_of_track);
     }
 
+    fn var_stmt(&mut self) {
+        for var_stmt in &self.program.statements.variable_statements {
+            self.symbol_table.add_variable(var_stmt.identifier.clone(), var_stmt.value.clone());
+        }
+    }
+
     fn play_stmt(&mut self) {
         let mut temp_errors: Vec<(&str, u32)> = Vec::new();
 
-        for play_stmt in &self.statements {
+        for play_stmt in &self.program.statements.action_statements.play_statements {
             let line = play_stmt.token.line;
             let note: u32 = play_stmt.note.literal.parse().unwrap();
             let duration: u32 = play_stmt.duration.literal.parse().unwrap();
@@ -100,7 +133,7 @@ impl Compiler {
     }
 }
 
-pub fn compile(statements: Vec<PlayStmt>, path: &str, errors: ErrorHandler) -> ErrorHandler {
+pub fn compile(statements: Program, path: &str, errors: ErrorHandler) -> ErrorHandler {
     let mut compiler = init_compiler(statements, errors);
     compiler.header_chunk();
     compiler.track_chunk();

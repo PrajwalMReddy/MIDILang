@@ -1,25 +1,26 @@
 use crate::error::ErrorHandler;
 use crate::lexer::Token;
 use crate::lexer::TokenType;
+use crate::ast::{ActionStatement, PlayStmt, Program, Statement, VarStmt};
 
 struct Parser {
     tokens: Vec<Token>,
-    statements: Vec<PlayStmt>,
+    program: Program,
     current: usize,
     errors: ErrorHandler,
-}
-
-pub struct PlayStmt {
-    pub token: Token,
-    pub note: Token,
-    pub duration: Token,
-    pub velocity: Token,
 }
 
 fn init_parser(tokens: Vec<Token>, errors: ErrorHandler) -> Parser {
     Parser {
         tokens,
-        statements: Vec::new(),
+        program: Program {
+            statements: Statement {
+                variable_statements: Vec::new(),
+                action_statements: ActionStatement {
+                    play_statements: Vec::new(),
+                },
+            },
+        },
         current: 0,
         errors,
     }
@@ -28,8 +29,31 @@ fn init_parser(tokens: Vec<Token>, errors: ErrorHandler) -> Parser {
 impl Parser {
     fn parse(&mut self) {
         while self.peek().ttype != TokenType::Eof {
+            self.statement();
+        }
+    }
+
+    fn statement(&mut self) {
+        if self.peek().ttype == TokenType::Var {
+            let var_stmt = self.variable_statement();
+            self.program.statements.variable_statements.push(var_stmt);
+        } else {
             let play_stmt = self.play_statement();
-            self.statements.push(play_stmt);
+            self.program.statements.action_statements.play_statements.push(play_stmt);
+        }
+    }
+
+    fn variable_statement(&mut self) -> VarStmt {
+        let token = self.advance();
+        let identifier = self.advance();
+        self.advance(); // Advance Past The Equals Sign
+        let value = self.advance();
+        self.advance(); // Advance Past The Semicolon
+
+        VarStmt {
+            token,
+            identifier,
+            value,
         }
     }
 
@@ -38,7 +62,6 @@ impl Parser {
         let note = self.advance();
         let duration = self.advance();
         let velocity = self.advance();
-
         self.advance(); // Advance Past The Semicolon
 
         PlayStmt {
@@ -57,11 +80,15 @@ impl Parser {
         self.current = self.current + 1;
         self.tokens[self.current - 1].clone()
     }
+
+    fn new_error(&mut self, msg: &str, line: u32) {
+        self.errors.add_error(String::from("Parser Error"), String::from(msg), line);
+    }
 }
 
-pub fn parse(tokens: Vec<Token>, errors: ErrorHandler) -> (Vec<PlayStmt>, ErrorHandler) {
+pub fn parse(tokens: Vec<Token>, errors: ErrorHandler) -> (Program, ErrorHandler) {
     let mut parser = init_parser(tokens, errors);
     parser.parse();
 
-    (parser.statements, parser.errors)
+    (parser.program, parser.errors)
 }
