@@ -24,7 +24,7 @@ fn main() {
     let (statements, errors) = parser::parse(tokens, errors); errors.display_if_has_errors();
     let errors = compiler::compile(statements, path, errors); errors.display_if_has_errors();
 
-    println!("\nSuccessfully Generated {}.midi", path);
+    println!("\nSuccessfully Generated {}.mid", path);
 }
 
 fn read_file(args: &Vec<String>) -> String {

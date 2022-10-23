@@ -1,9 +1,9 @@
-use std::env::var;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
 use crate::error::ErrorHandler;
 use crate::ast::Program;
-use crate::lexer::Token;
+use crate::lexer::{Token, TokenType};
 
 struct Compiler {
     file_bytes: Vec<u8>,
@@ -13,22 +13,12 @@ struct Compiler {
 }
 
 struct SymbolTable {
-    variables: Vec<Variable>,
-}
-
-struct Variable {
-    identifier: Token,
-    value: Token,
+    pub variables: HashMap<String, u32>,
 }
 
 impl SymbolTable {
     fn add_variable(&mut self, identifier: Token, value: Token) {
-        self.variables.push(
-            Variable {
-                identifier,
-                value,
-            }
-        );
+        self.variables.insert(identifier.literal, value.literal.parse().unwrap());
     }
 }
 
@@ -37,7 +27,7 @@ fn init_compiler(program: Program, errors: ErrorHandler) -> Compiler {
         file_bytes: Vec::new(),
         program,
         symbol_table: SymbolTable {
-            variables: Vec::new(),
+            variables: HashMap::new(),
         },
         errors,
     }
@@ -93,9 +83,27 @@ impl Compiler {
 
         for play_stmt in &self.program.statements.action_statements.play_statements {
             let line = play_stmt.token.line;
-            let note: u32 = play_stmt.note.literal.parse().unwrap();
-            let duration: u32 = play_stmt.duration.literal.parse().unwrap();
-            let velocity: u32 = play_stmt.velocity.literal.parse().unwrap();
+
+            let note: u32 = match play_stmt.note.ttype {
+                TokenType::Number => play_stmt.note.literal.parse().unwrap(),
+                TokenType::Identifier => *self.symbol_table.variables.get(&play_stmt.note.literal).unwrap(),
+
+                _ => 0,
+            };
+
+            let duration: u32 = match play_stmt.duration.ttype {
+                TokenType::Number => play_stmt.duration.literal.parse().unwrap(),
+                TokenType::Identifier => *self.symbol_table.variables.get(&play_stmt.duration.literal).unwrap(),
+
+                _ => 0,
+            };
+
+            let velocity: u32 = match play_stmt.velocity.ttype {
+                TokenType::Number => play_stmt.velocity.literal.parse().unwrap(),
+                TokenType::Identifier => *self.symbol_table.variables.get(&play_stmt.velocity.literal).unwrap(),
+
+                _ => 0,
+            };
 
             if note > 127 {
                 temp_errors.push(("Note Value Cannot Be More Than 127", line));
@@ -138,8 +146,8 @@ pub fn compile(statements: Program, path: &str, errors: ErrorHandler) -> ErrorHa
     compiler.header_chunk();
     compiler.track_chunk();
 
-    let mut file = File::create(path.to_owned() + ".mid").expect("Unable To Create .midi File");
-    file.write(&mut compiler.file_bytes).expect("Could Not Generate .midi File");
+    let mut file = File::create(path.to_owned() + ".mid").expect("Unable To Create .mid File");
+    file.write(&mut compiler.file_bytes).expect("Could Not Generate .mid File");
 
     compiler.errors
 }

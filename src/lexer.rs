@@ -8,14 +8,14 @@ pub struct Scanner {
     pub errors: ErrorHandler,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Token {
     pub ttype: TokenType,
     pub literal: String,
     pub line: u32,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum TokenType {
     Import, Tune, Var, Play, // Keywords
     Identifier, Number, // Data Tokens
@@ -63,7 +63,7 @@ impl Scanner {
     }
 
     fn keyword(&mut self) -> Token {
-        while self.is_alpha(self.peek()) {
+        while self.is_alpha(self.peek()) || self.is_digit(self.peek()) {
             self.advance();
         }
 
@@ -95,6 +95,15 @@ impl Scanner {
                 '\r' => { self.advance(); },
                 '\t' => { self.advance(); },
                 '\n' => { self.line += 1; self.advance(); },
+
+                '/' => {
+                    if self.peek() == '/' {
+                        while self.peek() != '\n' && !self.is_at_end() {
+                            self.advance();
+                        }
+                    }
+                },
+
                 _ => { return; }
             };
         }
