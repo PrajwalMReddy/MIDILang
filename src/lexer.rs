@@ -68,7 +68,7 @@ impl Scanner {
         }
 
         match self.file[self.start..self.current] {
-            // Temporary Hack To Get The Types To Match
+            // TODO Temporary Hack To Get The Types To Match
             ['i','m','p','o','r','t'] => self.make_token(TokenType::Import),
             ['p','l','a','y'] => self.make_token(TokenType::Play),
             ['t','u','n','e'] => self.make_token(TokenType::Tune),

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
 use crate::error::ErrorHandler;
-use crate::ast::Program;
+use crate::ast::{ActStmt, DeclStmt, PlayStmt, Program, VarStmt};
 use crate::lexer::{Token, TokenType};
 
 struct Compiler {
@@ -50,7 +50,7 @@ impl Compiler {
     }
 
     fn track_chunk(&mut self) {
-        let track_length: u32 = ((self.program.statements.action_statements.play_statements.len() * 8) + 4) as u32;
+        let track_length = self.track_length();
         let tlb: [u8; 4] = track_length.to_be_bytes();
 
         let mut header: Vec<u8> = vec![
@@ -60,80 +60,97 @@ impl Compiler {
             tlb[0], tlb[1], tlb[2], tlb[3], // Track Length
         ];
 
-        self.file_bytes.append(&mut header);
-
-        self.var_stmt();
-        self.play_stmt();
-
         let mut end_of_track: Vec<u8> = vec![
             0x00, 0xff, 0x2f, 0x00, // End Of Track Event
         ];
 
+        self.file_bytes.append(&mut header);
+        self.compile();
         self.file_bytes.append(&mut end_of_track);
     }
 
-    fn var_stmt(&mut self) {
-        for var_stmt in &self.program.statements.variable_statements {
-            self.symbol_table.add_variable(var_stmt.identifier.clone(), var_stmt.value.clone());
+    fn track_length(&mut self) -> u32 {
+        let length: u32 = ((self.program.statements.action_statements.len() * 8) + 4) as u32;
+        length
+    }
+
+    fn compile(&mut self) {
+        self.decl_stmt();
+        self.act_stmt();
+    }
+
+    fn decl_stmt(&mut self) {
+        let declaration_statements = &self.program.statements.declaration_statements.clone();
+
+        for decl_stmt in declaration_statements {
+            match decl_stmt {
+                DeclStmt::VariableStatement(var_stmt) => { self.var_stmt(var_stmt); }
+            }
         }
     }
 
-    fn play_stmt(&mut self) {
-        let mut temp_errors: Vec<(&str, u32)> = Vec::new();
+    fn var_stmt(&mut self, var_stmt: &VarStmt) {
+        self.symbol_table.add_variable(var_stmt.identifier.clone(), var_stmt.value.clone());
+    }
 
-        for play_stmt in &self.program.statements.action_statements.play_statements {
-            let line = play_stmt.token.line;
+    fn act_stmt(&mut self) {
+        let action_statements = &self.program.statements.action_statements.clone();
 
-            let note: u32 = match play_stmt.note.ttype {
-                TokenType::Number => play_stmt.note.literal.parse().unwrap(),
-                TokenType::Identifier => *self.symbol_table.variables.get(&play_stmt.note.literal).unwrap(),
-
-                _ => 0,
-            };
-
-            let duration: u32 = match play_stmt.duration.ttype {
-                TokenType::Number => play_stmt.duration.literal.parse().unwrap(),
-                TokenType::Identifier => *self.symbol_table.variables.get(&play_stmt.duration.literal).unwrap(),
-
-                _ => 0,
-            };
-
-            let velocity: u32 = match play_stmt.velocity.ttype {
-                TokenType::Number => play_stmt.velocity.literal.parse().unwrap(),
-                TokenType::Identifier => *self.symbol_table.variables.get(&play_stmt.velocity.literal).unwrap(),
-
-                _ => 0,
-            };
-
-            if note > 127 {
-                temp_errors.push(("Note Value Cannot Be More Than 127", line));
-            } else if duration > 127 {
-                // TODO Temporary Restriction
-                temp_errors.push(("Duration Value Cannot Be More Than 127", line));
-            } else if velocity > 127 {
-                temp_errors.push(("Velocity Value Cannot Be More Than 127", line));
+        for act_stmt in action_statements {
+            match act_stmt {
+                ActStmt::PlayStatement(play_stmt) => { self.play_stmt(play_stmt); }
             }
+        }
+    }
 
-            let mut track_event: Vec<u8> = vec![
-                /*----Event-Data---//----Value-|-Description-----*/
+    fn play_stmt(&mut self, play_stmt: &PlayStmt) {
+        let line = play_stmt.token.line;
 
-                0x00, // 0 | Elapsed Time From The Previous Event
-                0x9_0, // 9_0 | Note On Event
-                note as u8, // Note To Be Played
-                velocity as u8, // Velocity To Be Played At
+        let note: u32 = match play_stmt.note.ttype {
+            TokenType::Number => play_stmt.note.literal.parse().unwrap(),
+            TokenType::Identifier => *self.symbol_table.variables.get(&play_stmt.note.literal).unwrap(),
 
-                duration as u8, // Elapsed Time From The Previous Event
-                0x8_0, // 8 | Note Off Event
-                note as u8, // Note To Be Turned Off
-                0x00, // 0 | Velocity
-            ];
+            _ => 0,
+        };
 
-            self.file_bytes.append(&mut track_event);
+        let duration: u32 = match play_stmt.duration.ttype {
+            TokenType::Number => play_stmt.duration.literal.parse().unwrap(),
+            TokenType::Identifier => *self.symbol_table.variables.get(&play_stmt.duration.literal).unwrap(),
+
+            _ => 0,
+        };
+
+        let velocity: u32 = match play_stmt.velocity.ttype {
+            TokenType::Number => play_stmt.velocity.literal.parse().unwrap(),
+            TokenType::Identifier => *self.symbol_table.variables.get(&play_stmt.velocity.literal).unwrap(),
+
+            _ => 0,
+        };
+
+        if note > 127 {
+            self.new_error("Note Value Cannot Be More Than 127", line);
+        } else if duration > 127 {
+            // TODO Temporary Restriction
+            self.new_error("Duration Value Cannot Be More Than 127", line);
+        } else if velocity > 127 {
+            self.new_error("Velocity Value Cannot Be More Than 127", line);
         }
 
-        for (msg, line) in temp_errors {
-            self.new_error(msg, line);
-        }
+        let mut track_event: Vec<u8> = vec![
+            /*----Event-Data---//----Value-|-Description-----*/
+
+            0x00, // 0 | Elapsed Time From The Previous Event
+            0x9_0, // 9_0 | Note On Event
+            note as u8, // Note To Be Played
+            velocity as u8, // Velocity To Be Played At
+
+            duration as u8, // Elapsed Time From The Previous Event
+            0x8_0, // 8 | Note Off Event
+            note as u8, // Note To Be Turned Off
+            0x00, // 0 | Velocity
+        ];
+
+        self.file_bytes.append(&mut track_event);
     }
 
     fn new_error(&mut self, msg: &str, line: u32) {

@@ -1,24 +1,32 @@
 use crate::lexer::Token;
 
 pub struct Program {
-    pub statements: Statement,
+    pub statements: Stmt,
 }
 
-pub struct Statement {
-    pub variable_statements: Vec<VarStmt>,
-    pub action_statements: ActionStatement,
+pub struct Stmt {
+    pub declaration_statements: Vec<DeclStmt>,
+    pub action_statements: Vec<ActStmt>,
 }
 
-pub struct ActionStatement {
-    pub play_statements: Vec<PlayStmt>,
+#[derive(Clone)]
+pub enum DeclStmt {
+    VariableStatement(VarStmt),
 }
 
+#[derive(Clone)]
 pub struct VarStmt {
     pub token: Token,
     pub identifier: Token,
     pub value: Token,
 }
 
+#[derive(Clone)]
+pub enum ActStmt {
+    PlayStatement(PlayStmt),
+}
+
+#[derive(Clone)]
 pub struct PlayStmt {
     pub token: Token,
     pub note: Token,

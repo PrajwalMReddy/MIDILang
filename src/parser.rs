@@ -1,7 +1,7 @@
 use crate::error::ErrorHandler;
 use crate::lexer::Token;
 use crate::lexer::TokenType;
-use crate::ast::{ActionStatement, PlayStmt, Program, Statement, VarStmt};
+use crate::ast::{Program, Stmt, DeclStmt, ActStmt, VarStmt, PlayStmt};
 
 struct Parser {
     tokens: Vec<Token>,
@@ -14,12 +14,10 @@ fn init_parser(tokens: Vec<Token>, errors: ErrorHandler) -> Parser {
     Parser {
         tokens,
         program: Program {
-            statements: Statement {
-                variable_statements: Vec::new(),
-                action_statements: ActionStatement {
-                    play_statements: Vec::new(),
-                },
-            },
+            statements: Stmt {
+                declaration_statements: Vec::new(),
+                action_statements: Vec::new(),
+            }
         },
         current: 0,
         errors,
@@ -36,40 +34,44 @@ impl Parser {
     fn statement(&mut self) {
         if self.peek().ttype == TokenType::Var {
             let var_stmt = self.variable_statement();
-            self.program.statements.variable_statements.push(var_stmt);
-        } else {
+            self.program.statements.declaration_statements.push(var_stmt);
+        } else if self.peek().ttype == TokenType::Play {
             let play_stmt = self.play_statement();
-            self.program.statements.action_statements.play_statements.push(play_stmt);
+            self.program.statements.action_statements.push(play_stmt);
         }
     }
 
-    fn variable_statement(&mut self) -> VarStmt {
+    fn variable_statement(&mut self) -> DeclStmt {
         let token = self.advance();
         let identifier = self.advance();
         self.advance(); // Advance Past The Equals Sign
         let value = self.advance();
         self.advance(); // Advance Past The Semicolon
 
-        VarStmt {
-            token,
-            identifier,
-            value,
-        }
+        DeclStmt::VariableStatement(
+            VarStmt {
+                token,
+                identifier,
+                value,
+            }
+        )
     }
 
-    fn play_statement(&mut self) -> PlayStmt {
+    fn play_statement(&mut self) -> ActStmt {
         let token = self.advance();
         let note = self.advance();
         let duration = self.advance();
         let velocity = self.advance();
         self.advance(); // Advance Past The Semicolon
 
-        PlayStmt {
-            token,
-            note,
-            duration,
-            velocity,
-        }
+        ActStmt::PlayStatement(
+            PlayStmt {
+                token,
+                note,
+                duration,
+                velocity,
+            }
+        )
     }
 
     fn peek(&mut self) -> Token {
