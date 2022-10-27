@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
 use crate::error::ErrorHandler;
-use crate::ast::{ActStmt, DeclStmt, PlayStmt, Program, VarStmt};
+use crate::ast::{ActStmt, DeclStmt, LoopStmt, PlayStmt, Program, VarStmt};
 use crate::lexer::{Token, TokenType};
 
 struct Compiler {
@@ -98,7 +98,32 @@ impl Compiler {
 
         for act_stmt in action_statements {
             match act_stmt {
+                ActStmt::LoopStatement(loop_stmt) => { self.loop_stmt(loop_stmt); }
                 ActStmt::PlayStatement(play_stmt) => { self.play_stmt(play_stmt); }
+            }
+        }
+    }
+
+    fn loop_stmt(&mut self, loop_stmt: &LoopStmt) {
+        let iterations: u32 = match loop_stmt.iterations.ttype {
+            TokenType::Number => loop_stmt.iterations.literal.parse().unwrap(),
+            TokenType::Identifier => *self.symbol_table.variables.get(&loop_stmt.iterations.literal).unwrap(),
+
+            _ => 0,
+        };
+
+        for i in 0..iterations {
+            for decl_stmt in &loop_stmt.declaration_statements {
+                match decl_stmt {
+                    DeclStmt::VariableStatement(var_stmt) => { self.var_stmt(var_stmt); }
+                }
+            }
+
+            for act_stmt in &loop_stmt.action_statements {
+                match act_stmt {
+                    ActStmt::LoopStatement(loop_stmt) => { self.loop_stmt(loop_stmt); }
+                    ActStmt::PlayStatement(play_stmt) => { self.play_stmt(play_stmt); }
+                }
             }
         }
     }

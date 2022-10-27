@@ -17,9 +17,10 @@ pub struct Token {
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum TokenType {
-    Import, Tune, Var, Play, // Keywords
+    Import, Tune, Var, Loop, Play, // Keywords
     Identifier, Number, // Data Tokens
-    Equal, LeftBrace, RightBrace, Semicolon, // Punctuation
+    Equal, Colon,
+    LeftBrace, RightBrace, Semicolon, // Punctuation
     Eof, Error, // Special Tokens
 }
 
@@ -54,6 +55,7 @@ impl Scanner {
 
         match c {
             '=' => self.make_token(TokenType::Equal),
+            ':' => self.make_token(TokenType::Colon),
             '{' => self.make_token(TokenType::LeftBrace),
             '}' => self.make_token(TokenType::RightBrace),
             ';' => self.make_token(TokenType::Semicolon),
@@ -70,6 +72,7 @@ impl Scanner {
         match self.file[self.start..self.current] {
             // TODO Temporary Hack To Get The Types To Match
             ['i','m','p','o','r','t'] => self.make_token(TokenType::Import),
+            ['l','o','o','p'] => self.make_token(TokenType::Loop),
             ['p','l','a','y'] => self.make_token(TokenType::Play),
             ['t','u','n','e'] => self.make_token(TokenType::Tune),
             ['v','a','r'] => self.make_token(TokenType::Var),
