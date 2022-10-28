@@ -56,10 +56,10 @@ impl Parser {
             self.new_error("Variable Names Must Be Identifiers", identifier.line);
         }
 
-        if !self.check_next(TokenType::Equal) {
-            self.new_error("An Equals Sign Was Expected After The Variable Name", identifier.line);
+        if !self.check_next(TokenType::Colon) {
+            self.new_error("A Colon Was Expected After The Variable Name", identifier.line);
         } else {
-            self.advance(); // Advance Past The Equals Sign
+            self.advance(); // Advance Past The Colon
         }
 
         let value = self.advance();
@@ -117,6 +117,13 @@ impl Parser {
 
     fn play_statement(&mut self) -> ActStmt {
         let token = self.advance(); // Capture The play Token
+
+        if !self.check_next(TokenType::Colon) {
+            self.new_error("A Colon Was Expected After The Play Keyword", token.line);
+        } else {
+            self.advance(); // Advance Past The Colon
+        }
+
         let note = self.advance();
         let duration = self.advance();
         let velocity = self.advance();
