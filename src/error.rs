@@ -45,13 +45,13 @@ impl ErrorHandler {
             let line = lines[error.line as usize - 1];
 
             println!("{} | {}", error.etype, error.message);
-            println!("Line {}: {}\n", error.line, line);
+            println!("Line {}: {}\n", error.line, line.trim());
         }
 
         exit(1);
     }
 
-    fn has_errors(&self) -> bool {
+    pub fn has_errors(&self) -> bool {
         self.errors.len() != 0
     }
 }

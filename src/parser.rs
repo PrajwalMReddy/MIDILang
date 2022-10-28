@@ -35,13 +35,12 @@ impl Parser {
         let mut decl_stmt: Vec<DeclStmt> = Vec::new();
         let mut act_stmt: Vec<ActStmt> = Vec::new();
 
-        while self.peek().ttype != until
-        {
-            if self.peek().ttype == TokenType::Var {
+        while !self.check_next(until.clone()) && !self.check_next(TokenType::Eof) {
+            if self.check_next(TokenType::Var) {
                 decl_stmt.push(self.variable_statement());
-            } else if self.peek().ttype == TokenType::Loop {
+            } else if self.check_next(TokenType::Loop) {
                 act_stmt.push(self.loop_statement());
-            } else if self.peek().ttype == TokenType::Play {
+            } else if self.check_next(TokenType::Play) {
                 act_stmt.push(self.play_statement());
             }
         }
@@ -50,11 +49,26 @@ impl Parser {
     }
 
     fn variable_statement(&mut self) -> DeclStmt {
-        let token = self.advance();
+        let token = self.advance(); // Capture The var Token
+
         let identifier = self.advance();
-        self.advance(); // Advance Past The Equals Sign
+        if identifier.ttype != TokenType::Identifier {
+            self.new_error("Variable Names Must Be Identifiers", identifier.line);
+        }
+
+        if !self.check_next(TokenType::Equal) {
+            self.new_error("An Equals Sign Was Expected After The Variable Name", identifier.line);
+        } else {
+            self.advance(); // Advance Past The Equals Sign
+        }
+
         let value = self.advance();
-        self.advance(); // Advance Past The Semicolon
+
+        if !self.check_next(TokenType::Semicolon) {
+            self.new_error("A Semicolon Was Expected After The Variable Declaration", token.line);
+        } else {
+            self.advance(); // Advance Past The Semicolon
+        }
 
         DeclStmt::VariableStatement(
             VarStmt {
@@ -66,12 +80,30 @@ impl Parser {
     }
 
     fn loop_statement(&mut self) -> ActStmt {
-        let token = self.advance();
-        self.advance(); // Advance Past The Colon
+        let token = self.advance(); // Capture The loop Token
+
+        if !self.check_next(TokenType::Colon) {
+            self.new_error("A Colon Was Expected After The Loop Keyword", token.line);
+        } else {
+            self.advance(); // Advance Past The Colon
+        }
+
         let iterations = self.advance();
-        self.advance(); // Advance Past The Opening Left Brace
+
+        if !self.check_next(TokenType::LeftBrace) {
+            self.new_error("An Opening Brace Was Expected After The Iterations Expression", iterations.line);
+        } else {
+            self.advance(); // Advance Past The Opening Left Brace
+        }
+
         let (decl_stmt, act_stmt) = self.statement(TokenType::RightBrace);
-        self.advance(); // Advance Past The Closing Right Brace
+
+        if !self.check_next(TokenType::RightBrace) {
+            let line = self.peek().line;
+            self.new_error("A Closing Brace Was Expected After The Loop Block", line);
+        } else {
+            self.advance(); // Advance Past The Closing Right Brace
+        }
 
         ActStmt::LoopStatement(
             LoopStmt {
@@ -84,11 +116,16 @@ impl Parser {
     }
 
     fn play_statement(&mut self) -> ActStmt {
-        let token = self.advance();
+        let token = self.advance(); // Capture The play Token
         let note = self.advance();
         let duration = self.advance();
         let velocity = self.advance();
-        self.advance(); // Advance Past The Semicolon
+
+        if !self.check_next(TokenType::Semicolon) {
+            self.new_error("A Semicolon Was Expected After The Note, Duration, And Velocity Expressions", token.line);
+        } else {
+            self.advance(); // Advance Past The Semicolon
+        }
 
         ActStmt::PlayStatement(
             PlayStmt {
@@ -102,6 +139,14 @@ impl Parser {
 
     fn peek(&mut self) -> Token {
         self.tokens[self.current].clone()
+    }
+
+    fn check_next(&mut self, ttoken: TokenType) -> bool {
+        return if self.peek().ttype == ttoken {
+            true
+        } else {
+            false
+        }
     }
 
     fn advance(&mut self) -> Token {
