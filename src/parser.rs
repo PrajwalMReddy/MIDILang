@@ -1,7 +1,7 @@
 use crate::error::ErrorHandler;
 use crate::lexer::Token;
 use crate::lexer::TokenType;
-use crate::ast::{Program, Stmt, DeclStmt, ActStmt, TuneStmt, VarStmt, PlayStmt, LoopStmt};
+use crate::ast::{Program, Stmt, DeclStmt, ActStmt, TuneStmt, VarStmt, PlayStmt, LoopStmt, PlayTuneStmt};
 
 struct Parser {
     tokens: Vec<Token>,
@@ -102,10 +102,10 @@ impl Parser {
             self.new_error("Variable Names Must Be Identifiers", identifier.line);
         }
 
-        if !self.check_next(TokenType::Colon) {
-            self.new_error("A Colon Was Expected After The Variable Name", identifier.line);
+        if !self.check_next(TokenType::Equal) {
+            self.new_error("An Equals Sign Was Expected After The Variable Name", identifier.line);
         } else {
-            self.advance(); // Advance Past The Colon
+            self.advance(); // Advance Past The Equals Sign
         }
 
         let value = self.advance();
@@ -162,6 +162,14 @@ impl Parser {
     }
 
     fn play_statement(&mut self) -> ActStmt {
+        if self.peek_next().ttype == TokenType::Colon {
+            self.play_note_stmt()
+        } else {
+            self.play_tune_stmt()
+        }
+    }
+
+    fn play_note_stmt(&mut self) -> ActStmt {
         let token = self.advance(); // Capture The play Token
 
         if !self.check_next(TokenType::Colon) {
@@ -190,8 +198,41 @@ impl Parser {
         )
     }
 
+    fn play_tune_stmt(&mut self) -> ActStmt {
+        let token = self.advance(); // Capture The play Token
+        let identifier = self.advance();
+
+        let mut arguments: Vec<Token> = Vec::new();
+
+        if self.check_next(TokenType::Colon) {
+            self.advance(); // Advance Past The Colon
+
+            while !self.check_next(TokenType::Semicolon) && !self.check_next(TokenType::Eof) {
+                arguments.push(self.advance());
+            }
+        }
+
+        if !self.check_next(TokenType::Semicolon) {
+            self.new_error("A Semicolon Was Expected After The Tune Arguments", token.line);
+        } else {
+            self.advance(); // Advance Past The Semicolon
+        }
+
+        ActStmt::PlayTuneStatement(
+            PlayTuneStmt {
+                token,
+                tune: identifier,
+                arguments,
+            }
+        )
+    }
+
     fn peek(&mut self) -> Token {
         self.tokens[self.current].clone()
+    }
+
+    fn peek_next(&mut self) -> Token {
+        self.tokens[self.current + 1].clone()
     }
 
     fn check_next(&mut self, ttoken: TokenType) -> bool {

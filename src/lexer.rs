@@ -19,7 +19,7 @@ pub struct Token {
 pub enum TokenType {
     Import, Tune, Var, Loop, Play, // Keywords
     Identifier, Number, // Data Tokens
-    Colon, LeftBrace, RightBrace, Semicolon, // Punctuation
+    Equal, Colon, LeftBrace, RightBrace, Semicolon, // Punctuation
     Eof, Error, // Special Tokens
 }
 
@@ -53,6 +53,7 @@ impl Scanner {
         }
 
         match c {
+            '=' => self.make_token(TokenType::Equal),
             ':' => self.make_token(TokenType::Colon),
             '{' => self.make_token(TokenType::LeftBrace),
             '}' => self.make_token(TokenType::RightBrace),

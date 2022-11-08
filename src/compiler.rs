@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
 use crate::error::ErrorHandler;
-use crate::ast::{ActStmt, DeclStmt, LoopStmt, PlayStmt, Program, TuneStmt, VarStmt};
+use crate::ast::{ActStmt, DeclStmt, LoopStmt, PlayStmt, PlayTuneStmt, Program, TuneStmt, VarStmt};
 use crate::lexer::{Token, TokenType};
 use crate::symbol_table::SymbolTable;
 
@@ -105,6 +105,7 @@ impl Compiler {
             match act_stmt {
                 ActStmt::LoopStatement(loop_stmt) => { self.loop_stmt(loop_stmt); }
                 ActStmt::PlayStatement(play_stmt) => { self.play_stmt(play_stmt); }
+                ActStmt::PlayTuneStatement(play_tune_stmt) => { self.play_tune_stmt(play_tune_stmt); }
             }
         }
     }
@@ -131,6 +132,7 @@ impl Compiler {
 
                         self.tune_stmt(tune_stmt);
                     }
+
                     DeclStmt::VariableStatement(var_stmt) => {
                         if !self.symbol_table.has_variable(var_stmt.clone().identifier) {
                             new_var.push(var_stmt.clone().identifier);
@@ -145,6 +147,7 @@ impl Compiler {
                 match act_stmt {
                     ActStmt::LoopStatement(loop_stmt) => { self.loop_stmt(loop_stmt); }
                     ActStmt::PlayStatement(play_stmt) => { self.play_stmt(play_stmt); }
+                    ActStmt::PlayTuneStatement(play_tune_stmt) => { self.play_tune_stmt(play_tune_stmt); }
                 }
             }
 
@@ -216,6 +219,56 @@ impl Compiler {
         self.file_bytes.append(&mut track_event);
     }
 
+    fn play_tune_stmt(&mut self, play_tune_stmt: &PlayTuneStmt) {
+        let tune = self.get_tune(play_tune_stmt.clone().tune);
+
+        // Keeps Track Of All New Variables Created In The Tune Block
+        let mut new_tune: Vec<Token> = Vec::new();
+        let mut new_var: Vec<Token> = Vec::new();
+
+        for param in tune.parameters {
+            new_var.push(param);
+        }
+
+        for decl_stmt in &tune.declaration_statements {
+            match decl_stmt {
+                DeclStmt::TuneStatement(tune_stmt) => {
+                    if !self.symbol_table.has_tune(tune_stmt.clone().identifier) {
+                        new_tune.push(tune_stmt.clone().identifier);
+                    }
+
+                    self.tune_stmt(tune_stmt);
+                }
+
+                DeclStmt::VariableStatement(var_stmt) => {
+                    if !self.symbol_table.has_variable(var_stmt.clone().identifier) {
+                        new_var.push(var_stmt.clone().identifier);
+                    }
+
+                    self.var_stmt(var_stmt);
+                }
+            }
+        }
+
+        for act_stmt in &tune.action_statements {
+            match act_stmt {
+                ActStmt::LoopStatement(loop_stmt) => { self.loop_stmt(loop_stmt); }
+                ActStmt::PlayStatement(play_stmt) => { self.play_stmt(play_stmt); }
+                ActStmt::PlayTuneStatement(play_tune_stmt) => { self.play_tune_stmt(play_tune_stmt); }
+            }
+        }
+
+        // Drops All Declarations Declared In The Tune
+
+        for tune in new_tune {
+            self.symbol_table.drop_tune(tune);
+        }
+
+        for var in new_var {
+            self.symbol_table.drop_variable(var);
+        }
+    }
+
     fn add_tune(&mut self, identifier: Token, tune_stmt: TuneStmt) {
         let result = self.symbol_table.add_tune(identifier.clone(), tune_stmt.clone());
 
@@ -229,6 +282,27 @@ impl Compiler {
 
         if !result {
             self.new_error(format!("Variable '{}' Already Exists In This Scope", identifier.literal).as_str(), identifier.line);
+        }
+    }
+
+    fn get_tune(&mut self, identifier: Token) -> TuneStmt {
+        return match self.symbol_table.get_tune(identifier.clone()) {
+            None => {
+                self.new_error(format!("Tune '{}' Does Not Exist In This Scope", identifier.clone().literal).as_str(), identifier.clone().line);
+                TuneStmt {
+                    token: Token {
+                        ttype: TokenType::Error,
+                        literal: "".to_string(),
+                        line: 0,
+                    },
+                    identifier,
+                    parameters: Vec::new(),
+                    declaration_statements: Vec::new(),
+                    action_statements: Vec::new(),
+                }
+            }
+
+            Some(tune) => { tune.clone() }
         }
     }
 

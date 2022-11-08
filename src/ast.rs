@@ -36,6 +36,7 @@ pub struct VarStmt {
 pub enum ActStmt {
     LoopStatement(LoopStmt),
     PlayStatement(PlayStmt),
+    PlayTuneStatement(PlayTuneStmt),
 }
 
 #[derive(Clone)]
@@ -52,4 +53,11 @@ pub struct PlayStmt {
     pub note: Token,
     pub duration: Token,
     pub velocity: Token,
+}
+
+#[derive(Clone)]
+pub struct PlayTuneStmt {
+    pub token: Token,
+    pub tune: Token,
+    pub arguments: Vec<Token>,
 }

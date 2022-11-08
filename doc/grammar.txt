@@ -14,7 +14,7 @@ program:
     | import_statement* statement*
 
 import_statement:
-    | "import" ":" IDENTIFIER ";"
+    | "import" IDENTIFIER ";"
 
 statement:
     | declaration_statement
@@ -28,7 +28,7 @@ tune_statement:
     | "tune" IDENTIFIER (":" IDENTIFIER*)? "{" statement* "}"
 
 variable_statement:
-    | "var" IDENTIFIER ":" NUMBER ";"
+    | "var" IDENTIFIER "=" NUMBER ";"
 
 action_statement:
     | loop_statement
