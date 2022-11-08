@@ -222,12 +222,20 @@ impl Compiler {
     fn play_tune_stmt(&mut self, play_tune_stmt: &PlayTuneStmt) {
         let tune = self.get_tune(play_tune_stmt.clone().tune);
 
+        if tune.parameters.len() != play_tune_stmt.arguments.len() {
+            self.new_error(format!("Tune {} Expected {} Argument(s) But Received {}", tune.token.literal, tune.parameters.len(), play_tune_stmt.arguments.len()).as_str(), play_tune_stmt.token.line);
+            return;
+        }
+
         // Keeps Track Of All New Variables Created In The Tune Block
         let mut new_tune: Vec<Token> = Vec::new();
         let mut new_var: Vec<Token> = Vec::new();
 
-        for param in tune.parameters {
-            new_var.push(param);
+        if tune.parameters.len() != 0 {
+            for i in 0..tune.parameters.len() {
+                self.add_variable(tune.parameters[i].clone(), play_tune_stmt.arguments[i].clone());
+                new_var.push(tune.parameters[i].clone());
+            }
         }
 
         for decl_stmt in &tune.declaration_statements {
@@ -278,7 +286,14 @@ impl Compiler {
     }
 
     fn add_variable(&mut self, identifier: Token, value: Token) {
-        let result = self.symbol_table.add_variable(identifier.clone(), value.clone());
+        let ivalue = match value.ttype {
+            TokenType::Identifier => { self.get_variable(value) }
+            TokenType::Number => { value.literal.parse().unwrap() }
+
+            _ => { 0 }
+        };
+
+        let result = self.symbol_table.add_variable(identifier.clone(), ivalue);
 
         if !result {
             self.new_error(format!("Variable '{}' Already Exists In This Scope", identifier.literal).as_str(), identifier.line);

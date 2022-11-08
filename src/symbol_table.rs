@@ -19,12 +19,12 @@ impl SymbolTable {
         return true;
     }
 
-    pub fn add_variable(&mut self, identifier: Token, value: Token) -> bool {
+    pub fn add_variable(&mut self, identifier: Token, value: u32) -> bool {
         if self.variables.contains_key(identifier.literal.as_str()) {
             return false;
         }
 
-        self.variables.insert(identifier.literal, value.literal.parse().unwrap());
+        self.variables.insert(identifier.literal, value);
         return true;
     }
 
