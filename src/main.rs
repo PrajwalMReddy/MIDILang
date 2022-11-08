@@ -7,6 +7,7 @@ mod compiler;
 mod parser;
 mod error;
 mod ast;
+mod symbol_table;
 
 fn main() {
     let args: Vec<String> = env::args().collect();

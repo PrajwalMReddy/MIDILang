@@ -1,7 +1,7 @@
 use crate::error::ErrorHandler;
 use crate::lexer::Token;
 use crate::lexer::TokenType;
-use crate::ast::{Program, Stmt, DeclStmt, ActStmt, VarStmt, PlayStmt, LoopStmt};
+use crate::ast::{Program, Stmt, DeclStmt, ActStmt, TuneStmt, VarStmt, PlayStmt, LoopStmt};
 
 struct Parser {
     tokens: Vec<Token>,
@@ -36,7 +36,9 @@ impl Parser {
         let mut act_stmt: Vec<ActStmt> = Vec::new();
 
         while !self.check_next(until.clone()) && !self.check_next(TokenType::Eof) {
-            if self.check_next(TokenType::Var) {
+            if self.check_next(TokenType::Tune) {
+                decl_stmt.push(self.tune_statement());
+            } else if self.check_next(TokenType::Var) {
                 decl_stmt.push(self.variable_statement());
             } else if self.check_next(TokenType::Loop) {
                 act_stmt.push(self.loop_statement());
@@ -46,6 +48,50 @@ impl Parser {
         }
 
         (decl_stmt, act_stmt)
+    }
+
+    fn tune_statement(&mut self) -> DeclStmt {
+        let token = self.advance(); // Capture The tune Token
+
+        let identifier = self.advance();
+        if identifier.ttype != TokenType::Identifier {
+            self.new_error("Tune Names Must Be Identifiers", identifier.line);
+        }
+
+        let mut parameters: Vec<Token> = Vec::new();
+
+        if self.check_next(TokenType::Colon) {
+            self.advance(); // Advance Past The Colon
+
+            while !self.check_next(TokenType::LeftBrace) && !self.check_next(TokenType::Eof) {
+                parameters.push(self.advance());
+            }
+        }
+
+        if !self.check_next(TokenType::LeftBrace) {
+            self.new_error("An Opening Brace Was Expected After The Tune Identifier", identifier.line);
+        } else {
+            self.advance(); // Advance Past The Opening Left Brace
+        }
+
+        let (decl_stmt, act_stmt) = self.statement(TokenType::RightBrace);
+
+        if !self.check_next(TokenType::RightBrace) {
+            let line = self.peek().line;
+            self.new_error("A Closing Brace Was Expected After The Tune Block", line);
+        } else {
+            self.advance(); // Advance Past The Closing Right Brace
+        }
+
+        DeclStmt::TuneStatement(
+            TuneStmt {
+                token,
+                identifier,
+                parameters,
+                declaration_statements: decl_stmt,
+                action_statements: act_stmt,
+            }
+        )
     }
 
     fn variable_statement(&mut self) -> DeclStmt {

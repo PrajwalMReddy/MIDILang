@@ -2,8 +2,9 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
 use crate::error::ErrorHandler;
-use crate::ast::{ActStmt, DeclStmt, LoopStmt, PlayStmt, Program, VarStmt};
+use crate::ast::{ActStmt, DeclStmt, LoopStmt, PlayStmt, Program, TuneStmt, VarStmt};
 use crate::lexer::{Token, TokenType};
+use crate::symbol_table::SymbolTable;
 
 struct Compiler {
     file_bytes: Vec<u8>,
@@ -13,47 +14,13 @@ struct Compiler {
     errors: ErrorHandler,
 }
 
-struct SymbolTable {
-    pub variables: HashMap<String, u32>,
-}
-
-impl SymbolTable {
-    // Core Functions
-
-    fn add_variable(&mut self, identifier: Token, value: Token) -> bool {
-        if self.variables.contains_key(identifier.literal.as_str()) {
-            return false;
-        }
-
-        self.variables.insert(identifier.literal, value.literal.parse().unwrap());
-        return true;
-    }
-
-    fn get_variable(&mut self, identifier: Token) -> Option<&u32> {
-        self.variables.get(identifier.literal.as_str())
-    }
-
-    fn drop_variable(&mut self, identifier: Token) {
-        self.variables.remove(identifier.literal.as_str());
-    }
-
-    // Utility Functions
-
-    fn has_variable(&mut self, identifier: Token) -> bool {
-        return if self.variables.contains_key(identifier.literal.as_str()) {
-            true
-        } else {
-            false
-        }
-    }
-}
-
 fn init_compiler(program: Program, errors: ErrorHandler) -> Compiler {
     Compiler {
         file_bytes: Vec::new(),
         file_length: 4,
         program,
         symbol_table: SymbolTable {
+            tunes: HashMap::new(),
             variables: HashMap::new(),
         },
         errors,
@@ -117,9 +84,14 @@ impl Compiler {
 
         for decl_stmt in declaration_statements {
             match decl_stmt {
+                DeclStmt::TuneStatement(tune_stmt) => { self.tune_stmt(tune_stmt); }
                 DeclStmt::VariableStatement(var_stmt) => { self.var_stmt(var_stmt); }
             }
         }
+    }
+
+    fn tune_stmt(&mut self, tune_stmt: &TuneStmt) {
+        self.add_tune(tune_stmt.identifier.clone(), tune_stmt.clone());
     }
 
     fn var_stmt(&mut self, var_stmt: &VarStmt) {
@@ -147,10 +119,18 @@ impl Compiler {
 
         for _ in 0..iterations {
             // Keeps Track Of All New Variables Created In The Loop Block
+            let mut new_tune: Vec<Token> = Vec::new();
             let mut new_var: Vec<Token> = Vec::new();
 
             for decl_stmt in &loop_stmt.declaration_statements {
                 match decl_stmt {
+                    DeclStmt::TuneStatement(tune_stmt) => {
+                        if !self.symbol_table.has_tune(tune_stmt.clone().identifier) {
+                            new_tune.push(tune_stmt.clone().identifier);
+                        }
+
+                        self.tune_stmt(tune_stmt);
+                    }
                     DeclStmt::VariableStatement(var_stmt) => {
                         if !self.symbol_table.has_variable(var_stmt.clone().identifier) {
                             new_var.push(var_stmt.clone().identifier);
@@ -168,7 +148,12 @@ impl Compiler {
                 }
             }
 
-            // Drops All Local Variables Declared In The Loop
+            // Drops All Declarations Declared In The Loop
+
+            for tune in new_tune {
+                self.symbol_table.drop_tune(tune);
+            }
+
             for var in new_var {
                 self.symbol_table.drop_variable(var);
             }
@@ -231,6 +216,14 @@ impl Compiler {
         self.file_bytes.append(&mut track_event);
     }
 
+    fn add_tune(&mut self, identifier: Token, tune_stmt: TuneStmt) {
+        let result = self.symbol_table.add_tune(identifier.clone(), tune_stmt.clone());
+
+        if !result {
+            self.new_error(format!("Tune '{}' Already Exists In This Scope", identifier.literal).as_str(), identifier.line)
+        }
+    }
+
     fn add_variable(&mut self, identifier: Token, value: Token) {
         let result = self.symbol_table.add_variable(identifier.clone(), value.clone());
 
@@ -245,6 +238,7 @@ impl Compiler {
                 self.new_error(format!("Variable '{}' Does Not Exist In This Scope", identifier.literal).as_str(), identifier.line);
                 0
             }
+
             Some(value) => { *value }
         }
     }

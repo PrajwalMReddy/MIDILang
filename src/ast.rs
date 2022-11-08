@@ -12,7 +12,17 @@ pub struct Stmt {
 
 #[derive(Clone)]
 pub enum DeclStmt {
+    TuneStatement(TuneStmt),
     VariableStatement(VarStmt),
+}
+
+#[derive(Clone)]
+pub struct TuneStmt {
+    pub token: Token,
+    pub identifier: Token,
+    pub parameters: Vec<Token>,
+    pub declaration_statements: Vec<DeclStmt>,
+    pub action_statements: Vec<ActStmt>,
 }
 
 #[derive(Clone)]

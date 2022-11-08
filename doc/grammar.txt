@@ -25,7 +25,7 @@ declaration_statement:
     | variable_statement
 
 tune_statement:
-    | "tune" IDENTIFIER (":" IDENTIFIER ("," IDENTIFIER)*)? "{" statement* "}"
+    | "tune" IDENTIFIER (":" IDENTIFIER*)? "{" statement* "}"
 
 variable_statement:
     | "var" IDENTIFIER ":" NUMBER ";"
@@ -39,4 +39,4 @@ loop_statement:
 
 play_statement:
     | "play" ":" NOTE DURATION VELOCITY ";"
-    | "play" IDENTIFIER (":" NUMBER ("," NUMBER)*)? ";"
+    | "play" IDENTIFIER (":" NUMBER*)? ";"
