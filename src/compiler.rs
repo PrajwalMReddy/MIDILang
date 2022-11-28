@@ -17,7 +17,7 @@ struct Compiler {
 fn init_compiler(program: Program, errors: ErrorHandler) -> Compiler {
     Compiler {
         file_bytes: Vec::new(),
-        file_length: 4,
+        file_length: 4, // Size Of End Track Event
         program,
         symbol_table: SymbolTable {
             tunes: HashMap::new(),
@@ -176,7 +176,9 @@ impl Compiler {
             TokenType::Identifier => self.get_variable(play_stmt.clone().note),
 
             _ => 0,
-        };
+        }; if note > 127 {
+            self.new_error("Note Value Cannot Be More Than 127", line);
+        }
 
         let duration: u32 = match play_stmt.duration.ttype {
             TokenType::Number => play_stmt.duration.literal.parse().unwrap(),
@@ -185,38 +187,83 @@ impl Compiler {
             _ => 0,
         };
 
+        let mut duration_u8 = self.u32_to_vle(duration, play_stmt.duration.line);
+        let duration_len: u32 = duration_u8.len() as u32;
+
         let velocity: u32 = match play_stmt.velocity.ttype {
             TokenType::Number => play_stmt.velocity.literal.parse().unwrap(),
             TokenType::Identifier => self.get_variable(play_stmt.clone().velocity),
 
             _ => 0,
-        };
-
-        if note > 127 {
-            self.new_error("Note Value Cannot Be More Than 127", line);
-        } else if duration > 127 {
-            // TODO Temporary Restriction
-            self.new_error("Duration Value Cannot Be More Than 127", line);
-        } else if velocity > 127 {
+        }; if velocity > 127 {
             self.new_error("Velocity Value Cannot Be More Than 127", line);
         }
 
-        let mut track_event: Vec<u8> = vec![
+        let mut track_event: Vec<u8> = vec![];
+        let mut note_on: Vec<u8> = vec![
             /*----Event-Data---//----Value-|-Description-----*/
 
             0x00, // 0 | Elapsed Time From The Previous Event
             0x9_0, // 9_0 | Note On Event
             note as u8, // Note To Be Played
             velocity as u8, // Velocity To Be Played At
-
-            duration as u8, // Elapsed Time From The Previous Event
+        ];
+        let mut note_off: Vec<u8> = vec![
+            // Duration To Be Inserted Here
             0x8_0, // 8 | Note Off Event
             note as u8, // Note To Be Turned Off
             0x00, // 0 | Velocity
         ];
 
-        self.file_length += 8;
+        track_event.append(&mut note_on);
+        track_event.append(&mut duration_u8);
+        track_event.append(&mut note_off);
+
+        self.file_length += 7 + duration_len;
         self.file_bytes.append(&mut track_event);
+    }
+
+    fn u32_to_vle(&mut self, mut duration: u32, line: u32) -> Vec<u8> {
+        let mut sub_result: Vec<u8> = vec![];
+
+        if duration > (0x0fffffff as u32) {
+            self.new_error("Duration Value Cannot Be More Than 268435455", line);
+            sub_result.push(0);
+            return sub_result;
+        }
+
+        if duration <= 127 {
+            sub_result.push(duration as u8);
+            return sub_result;
+        }
+
+        let mut result: Vec<u8> = vec![0; 4];
+        for i in (0..=3).rev() {
+            result[i] = (duration & 0x7f) as u8;
+
+            if i < 3 {
+                result[i] |= 0x80;
+            }
+
+            duration >>= 7;
+
+            if duration < 1 {
+                break;
+            }
+        }
+
+        let mut index = 0;
+        let final_result: Vec<u8>;
+
+        for i in 0..result.len() {
+            if result[i] != 0 {
+                index = i;
+                break;
+            }
+        }
+
+        final_result = result[index..4].to_owned();
+        final_result
     }
 
     fn play_tune_stmt(&mut self, play_tune_stmt: &PlayTuneStmt) {
