@@ -1,7 +1,7 @@
 use crate::error::ErrorHandler;
 use crate::lexer::Token;
 use crate::lexer::TokenType;
-use crate::ast::{Program, Stmt, DeclStmt, ActStmt, TuneStmt, VarStmt, PlayStmt, LoopStmt, PlayTuneStmt};
+use crate::ast::{Program, Stmt, DeclStmt, ActStmt, TuneStmt, VarStmt, PlayStmt, LoopStmt, PlayTuneStmt, AssgnStmt};
 
 struct Parser {
     tokens: Vec<Token>,
@@ -44,6 +44,8 @@ impl Parser {
                 act_stmt.push(self.loop_statement());
             } else if self.check_next(TokenType::Play) {
                 act_stmt.push(self.play_statement());
+            } else if self.check_next(TokenType::Identifier) {
+                act_stmt.push(self.assignment_statement());
             }
         }
 
@@ -223,6 +225,31 @@ impl Parser {
                 token,
                 tune: identifier,
                 arguments,
+            }
+        )
+    }
+
+    fn assignment_statement(&mut self) -> ActStmt {
+        let identifier = self.advance();
+
+        if !self.check_next(TokenType::Equal) {
+            self.new_error("An Equals Sign Was Expected After The Identifier Keyword", identifier.line);
+        } else {
+            self.advance(); // Advance Past The Equals Sign
+        }
+
+        let value = self.advance();
+
+        if !self.check_next(TokenType::Semicolon) {
+            self.new_error("A Semicolon Was Expected After The Assignment Value", value.line);
+        } else {
+            self.advance(); // Advance Past The Semicolon
+        }
+
+        ActStmt::AssignmentStatement(
+            AssgnStmt{
+                identifier,
+                value,
             }
         )
     }

@@ -33,6 +33,7 @@ variable_statement:
 action_statement:
     | loop_statement
     | play_statement
+    | assignment_statement
 
 loop_statement:
     | "loop" ":" NUMBER "{" statement* "}"
@@ -40,3 +41,6 @@ loop_statement:
 play_statement:
     | "play" ":" NOTE DURATION VELOCITY ";"
     | "play" IDENTIFIER (":" NUMBER*)? ";"
+
+assignment_statement:
+    | IDENTIFIER "=" NUMBER ";"

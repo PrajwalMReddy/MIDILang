@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
 use crate::error::ErrorHandler;
-use crate::ast::{ActStmt, DeclStmt, LoopStmt, PlayStmt, PlayTuneStmt, Program, TuneStmt, VarStmt};
+use crate::ast::{ActStmt, AssgnStmt, DeclStmt, LoopStmt, PlayStmt, PlayTuneStmt, Program, TuneStmt, VarStmt};
 use crate::lexer::{Token, TokenType};
 use crate::symbol_table::SymbolTable;
 
@@ -106,6 +106,7 @@ impl Compiler {
                 ActStmt::LoopStatement(loop_stmt) => { self.loop_stmt(loop_stmt); }
                 ActStmt::PlayStatement(play_stmt) => { self.play_stmt(play_stmt); }
                 ActStmt::PlayTuneStatement(play_tune_stmt) => { self.play_tune_stmt(play_tune_stmt); }
+                ActStmt::AssignmentStatement(assgn_stmt) => { self.assgn_stmt(assgn_stmt); }
             }
         }
     }
@@ -148,6 +149,7 @@ impl Compiler {
                     ActStmt::LoopStatement(loop_stmt) => { self.loop_stmt(loop_stmt); }
                     ActStmt::PlayStatement(play_stmt) => { self.play_stmt(play_stmt); }
                     ActStmt::PlayTuneStatement(play_tune_stmt) => { self.play_tune_stmt(play_tune_stmt); }
+                    ActStmt::AssignmentStatement(assgn_stmt) => { self.assgn_stmt(assgn_stmt); }
                 }
             }
 
@@ -223,49 +225,6 @@ impl Compiler {
         self.file_bytes.append(&mut track_event);
     }
 
-    fn u32_to_vle(&mut self, mut duration: u32, line: u32) -> Vec<u8> {
-        let mut sub_result: Vec<u8> = vec![];
-
-        if duration > (0x0fffffff as u32) {
-            self.new_error("Duration Value Cannot Be More Than 268435455", line);
-            sub_result.push(0);
-            return sub_result;
-        }
-
-        if duration <= 127 {
-            sub_result.push(duration as u8);
-            return sub_result;
-        }
-
-        let mut result: Vec<u8> = vec![0; 4];
-        for i in (0..=3).rev() {
-            result[i] = (duration & 0x7f) as u8;
-
-            if i < 3 {
-                result[i] |= 0x80;
-            }
-
-            duration >>= 7;
-
-            if duration < 1 {
-                break;
-            }
-        }
-
-        let mut index = 0;
-        let final_result: Vec<u8>;
-
-        for i in 0..result.len() {
-            if result[i] != 0 {
-                index = i;
-                break;
-            }
-        }
-
-        final_result = result[index..4].to_owned();
-        final_result
-    }
-
     fn play_tune_stmt(&mut self, play_tune_stmt: &PlayTuneStmt) {
         let tune = self.get_tune(play_tune_stmt.clone().tune);
 
@@ -310,6 +269,7 @@ impl Compiler {
                 ActStmt::LoopStatement(loop_stmt) => { self.loop_stmt(loop_stmt); }
                 ActStmt::PlayStatement(play_stmt) => { self.play_stmt(play_stmt); }
                 ActStmt::PlayTuneStatement(play_tune_stmt) => { self.play_tune_stmt(play_tune_stmt); }
+                ActStmt::AssignmentStatement(assgn_stmt) => { self.assgn_stmt(assgn_stmt); }
             }
         }
 
@@ -324,26 +284,58 @@ impl Compiler {
         }
     }
 
+    fn assgn_stmt(&mut self, assgn_stmt: &AssgnStmt) {
+        self.reassign_variable(assgn_stmt.identifier.clone(), assgn_stmt.value.clone());
+    }
+
+    fn u32_to_vle(&mut self, mut duration: u32, line: u32) -> Vec<u8> {
+        let mut sub_result: Vec<u8> = vec![];
+
+        if duration > (0x0fffffff as u32) {
+            self.new_error("Duration Value Cannot Be More Than 268435455", line);
+            sub_result.push(0);
+            return sub_result;
+        }
+
+        if duration <= 127 {
+            sub_result.push(duration as u8);
+            return sub_result;
+        }
+
+        let mut result: Vec<u8> = vec![0; 4];
+        for i in (0..=3).rev() {
+            result[i] = (duration & 0x7f) as u8;
+
+            if i < 3 {
+                result[i] |= 0x80;
+            }
+
+            duration >>= 7;
+
+            if duration < 1 {
+                break;
+            }
+        }
+
+        let mut index = 0;
+        let final_result: Vec<u8>;
+
+        for i in 0..result.len() {
+            if result[i] != 0 {
+                index = i;
+                break;
+            }
+        }
+
+        final_result = result[index..4].to_owned();
+        final_result
+    }
+
     fn add_tune(&mut self, identifier: Token, tune_stmt: TuneStmt) {
         let result = self.symbol_table.add_tune(identifier.clone(), tune_stmt.clone());
 
         if !result {
             self.new_error(format!("Tune '{}' Already Exists In This Scope", identifier.literal).as_str(), identifier.line)
-        }
-    }
-
-    fn add_variable(&mut self, identifier: Token, value: Token) {
-        let ivalue = match value.ttype {
-            TokenType::Identifier => { self.get_variable(value) }
-            TokenType::Number => { value.literal.parse().unwrap() }
-
-            _ => { 0 }
-        };
-
-        let result = self.symbol_table.add_variable(identifier.clone(), ivalue);
-
-        if !result {
-            self.new_error(format!("Variable '{}' Already Exists In This Scope", identifier.literal).as_str(), identifier.line);
         }
     }
 
@@ -368,6 +360,21 @@ impl Compiler {
         }
     }
 
+    fn add_variable(&mut self, identifier: Token, value: Token) {
+        let ivalue = match value.ttype {
+            TokenType::Identifier => { self.get_variable(value) }
+            TokenType::Number => { value.literal.parse().unwrap() }
+
+            _ => { 0 }
+        };
+
+        let result = self.symbol_table.add_variable(identifier.clone(), ivalue);
+
+        if !result {
+            self.new_error(format!("Variable '{}' Already Exists In This Scope", identifier.literal).as_str(), identifier.line);
+        }
+    }
+
     fn get_variable(&mut self, identifier: Token) -> u32 {
         return match self.symbol_table.get_variable(identifier.clone()) {
             None => {
@@ -376,6 +383,21 @@ impl Compiler {
             }
 
             Some(value) => { *value }
+        }
+    }
+
+    fn reassign_variable(&mut self, identifier: Token, value: Token) {
+        let rvalue = match value.ttype {
+            TokenType::Identifier => { self.get_variable(value) }
+            TokenType::Number => { value.literal.parse().unwrap() }
+
+            _ => { 0 }
+        };
+
+        let result = self.symbol_table.reassign_variable(identifier.clone(), rvalue);
+
+        if !result {
+            self.new_error(format!("Variable '{}' Does Not Exist In This Scope", identifier.literal).as_str(), identifier.line);
         }
     }
 
