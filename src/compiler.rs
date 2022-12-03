@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::Write;
 use crate::error::ErrorHandler;
-use crate::ast::{ActStmt, AssgnStmt, DeclStmt, LoopStmt, PlayStmt, PlayTuneStmt, Program, TuneStmt, VarStmt};
+use crate::ast::{ActStmt, AssgnStmt, BinExpr, DeclStmt, Expression, LoopStmt, PlayStmt, PlayTuneStmt, Program, TuneStmt, VarStmt};
 use crate::lexer::{Token, TokenType};
 use crate::symbol_table::SymbolTable;
 
@@ -95,7 +95,13 @@ impl Compiler {
     }
 
     fn var_stmt(&mut self, var_stmt: &VarStmt) {
-        self.add_variable(var_stmt.identifier.clone(), var_stmt.value.clone());
+        let value: u32 = match var_stmt.value.clone() {
+            Expression::BinaryExpression(bin_expr) => self.evaluate_binary(&bin_expr),
+            Expression::Identifier(ident) => self.get_variable(ident),
+            Expression::Number(num) => num.literal.parse().unwrap(),
+        };
+
+        self.add_variable(var_stmt.identifier.clone(), value);
     }
 
     fn act_stmt(&mut self) {
@@ -112,11 +118,10 @@ impl Compiler {
     }
 
     fn loop_stmt(&mut self, loop_stmt: &LoopStmt) {
-        let iterations: u32 = match loop_stmt.iterations.ttype {
-            TokenType::Number => loop_stmt.iterations.literal.parse().unwrap(),
-            TokenType::Identifier => self.get_variable(loop_stmt.clone().iterations),
-
-            _ => 0,
+        let iterations: u32 = match loop_stmt.iterations.clone() {
+            Expression::BinaryExpression(bin_expr) => self.evaluate_binary(&bin_expr),
+            Expression::Identifier(ident) => self.get_variable(ident),
+            Expression::Number(num) => num.literal.parse().unwrap(),
         };
 
         for _ in 0..iterations {
@@ -173,30 +178,33 @@ impl Compiler {
     fn play_stmt(&mut self, play_stmt: &PlayStmt) {
         let line = play_stmt.token.line;
 
-        let note: u32 = match play_stmt.note.ttype {
-            TokenType::Number => play_stmt.note.literal.parse().unwrap(),
-            TokenType::Identifier => self.get_variable(play_stmt.clone().note),
-
-            _ => 0,
+        let note: u32 = match play_stmt.note.clone() {
+            Expression::BinaryExpression(bin_expr) => self.evaluate_binary(&bin_expr),
+            Expression::Identifier(ident) => self.get_variable(ident),
+            Expression::Number(num) => num.literal.parse().unwrap(),
         }; if note > 127 {
             self.new_error("Note Value Cannot Be More Than 127", line);
         }
 
-        let duration: u32 = match play_stmt.duration.ttype {
-            TokenType::Number => play_stmt.duration.literal.parse().unwrap(),
-            TokenType::Identifier => self.get_variable(play_stmt.clone().duration),
-
-            _ => 0,
+        let duration: u32 = match play_stmt.duration.clone() {
+            Expression::BinaryExpression(bin_expr) => self.evaluate_binary(&bin_expr),
+            Expression::Identifier(ident) => self.get_variable(ident),
+            Expression::Number(num) => num.literal.parse().unwrap(),
         };
 
-        let mut duration_u8 = self.u32_to_vle(duration, play_stmt.duration.line);
+        let line: u32 = match play_stmt.duration.clone() {
+            Expression::BinaryExpression(bin_expr) => bin_expr.operator.line,
+            Expression::Identifier(ident) => ident.line,
+            Expression::Number(num) => num.line,
+        };
+
+        let mut duration_u8 = self.u32_to_vle(duration, line);
         let duration_len: u32 = duration_u8.len() as u32;
 
-        let velocity: u32 = match play_stmt.velocity.ttype {
-            TokenType::Number => play_stmt.velocity.literal.parse().unwrap(),
-            TokenType::Identifier => self.get_variable(play_stmt.clone().velocity),
-
-            _ => 0,
+        let velocity: u32 = match play_stmt.velocity.clone() {
+            Expression::BinaryExpression(bin_expr) => self.evaluate_binary(&bin_expr),
+            Expression::Identifier(ident) => self.get_variable(ident),
+            Expression::Number(num) => num.literal.parse().unwrap(),
         }; if velocity > 127 {
             self.new_error("Velocity Value Cannot Be More Than 127", line);
         }
@@ -239,7 +247,13 @@ impl Compiler {
 
         if tune.parameters.len() != 0 {
             for i in 0..tune.parameters.len() {
-                self.add_variable(tune.parameters[i].clone(), play_tune_stmt.arguments[i].clone());
+                let value: u32 = match play_tune_stmt.arguments[i].clone() {
+                    Expression::BinaryExpression(bin_expr) => self.evaluate_binary(&bin_expr),
+                    Expression::Identifier(ident) => self.get_variable(ident),
+                    Expression::Number(num) => num.literal.parse().unwrap(),
+                };
+
+                self.add_variable(tune.parameters[i].clone(), value);
                 new_var.push(tune.parameters[i].clone());
             }
         }
@@ -285,7 +299,38 @@ impl Compiler {
     }
 
     fn assgn_stmt(&mut self, assgn_stmt: &AssgnStmt) {
-        self.reassign_variable(assgn_stmt.identifier.clone(), assgn_stmt.value.clone());
+        let value: u32 = match assgn_stmt.value.clone() {
+            Expression::BinaryExpression(bin_expr) => self.evaluate_binary(&bin_expr),
+            Expression::Identifier(ident) => self.get_variable(ident),
+            Expression::Number(num) => num.literal.parse().unwrap(),
+        };
+
+        self.reassign_variable(assgn_stmt.identifier.clone(), value);
+    }
+
+    fn evaluate_binary(&mut self, expr: &BinExpr) -> u32 {
+        let num1: u32 = match expr.lvalue.ttype {
+            TokenType::Number => expr.lvalue.literal.parse().unwrap(),
+            TokenType::Identifier => self.get_variable(expr.clone().lvalue),
+
+            _ => 0,
+        };
+
+        let num2: u32 = match expr.rvalue.ttype {
+            TokenType::Number => expr.rvalue.literal.parse().unwrap(),
+            TokenType::Identifier => self.get_variable(expr.clone().rvalue),
+
+            _ => 0,
+        };
+
+        match expr.operator.literal.clone().as_str() {
+            "+" => num1 + num2,
+            "-" => num1 - num2,
+            "*" => num1 * num2,
+            "/" => num1 / num2,
+
+            _ => 0
+        }
     }
 
     fn u32_to_vle(&mut self, mut duration: u32, line: u32) -> Vec<u8> {
@@ -360,15 +405,8 @@ impl Compiler {
         }
     }
 
-    fn add_variable(&mut self, identifier: Token, value: Token) {
-        let ivalue = match value.ttype {
-            TokenType::Identifier => { self.get_variable(value) }
-            TokenType::Number => { value.literal.parse().unwrap() }
-
-            _ => { 0 }
-        };
-
-        let result = self.symbol_table.add_variable(identifier.clone(), ivalue);
+    fn add_variable(&mut self, identifier: Token, value: u32) {
+        let result = self.symbol_table.add_variable(identifier.clone(), value);
 
         if !result {
             self.new_error(format!("Variable '{}' Already Exists In This Scope", identifier.literal).as_str(), identifier.line);
@@ -386,15 +424,8 @@ impl Compiler {
         }
     }
 
-    fn reassign_variable(&mut self, identifier: Token, value: Token) {
-        let rvalue = match value.ttype {
-            TokenType::Identifier => { self.get_variable(value) }
-            TokenType::Number => { value.literal.parse().unwrap() }
-
-            _ => { 0 }
-        };
-
-        let result = self.symbol_table.reassign_variable(identifier.clone(), rvalue);
+    fn reassign_variable(&mut self, identifier: Token, value: u32) {
+        let result = self.symbol_table.reassign_variable(identifier.clone(), value);
 
         if !result {
             self.new_error(format!("Variable '{}' Does Not Exist In This Scope", identifier.literal).as_str(), identifier.line);

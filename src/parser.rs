@@ -1,7 +1,7 @@
 use crate::error::ErrorHandler;
 use crate::lexer::Token;
 use crate::lexer::TokenType;
-use crate::ast::{Program, Stmt, DeclStmt, ActStmt, TuneStmt, VarStmt, PlayStmt, LoopStmt, PlayTuneStmt, AssgnStmt};
+use crate::ast::{Program, Stmt, DeclStmt, ActStmt, TuneStmt, VarStmt, PlayStmt, LoopStmt, PlayTuneStmt, AssgnStmt, Expression, BinExpr};
 
 struct Parser {
     tokens: Vec<Token>,
@@ -110,7 +110,7 @@ impl Parser {
             self.advance(); // Advance Past The Equals Sign
         }
 
-        let value = self.advance();
+        let value = self.expression();
 
         if !self.check_next(TokenType::Semicolon) {
             self.new_error("A Semicolon Was Expected After The Variable Declaration", token.line);
@@ -136,10 +136,10 @@ impl Parser {
             self.advance(); // Advance Past The Colon
         }
 
-        let iterations = self.advance();
+        let iterations = self.expression();
 
         if !self.check_next(TokenType::LeftBrace) {
-            self.new_error("An Opening Brace Was Expected After The Iterations Expression", iterations.line);
+            self.new_error("An Opening Brace Was Expected After The Iterations Expression", token.line);
         } else {
             self.advance(); // Advance Past The Opening Left Brace
         }
@@ -180,9 +180,9 @@ impl Parser {
             self.advance(); // Advance Past The Colon
         }
 
-        let note = self.advance();
-        let duration = self.advance();
-        let velocity = self.advance();
+        let note = self.expression();
+        let duration = self.expression();
+        let velocity = self.expression();
 
         if !self.check_next(TokenType::Semicolon) {
             self.new_error("A Semicolon Was Expected After The Note, Duration, And Velocity Expressions", token.line);
@@ -204,13 +204,13 @@ impl Parser {
         let token = self.advance(); // Capture The play Token
         let identifier = self.advance();
 
-        let mut arguments: Vec<Token> = Vec::new();
+        let mut arguments: Vec<Expression> = Vec::new();
 
         if self.check_next(TokenType::Colon) {
             self.advance(); // Advance Past The Colon
 
             while !self.check_next(TokenType::Semicolon) && !self.check_next(TokenType::Eof) {
-                arguments.push(self.advance());
+                arguments.push(self.expression());
             }
         }
 
@@ -238,20 +238,41 @@ impl Parser {
             self.advance(); // Advance Past The Equals Sign
         }
 
-        let value = self.advance();
+        let value = self.expression();
 
         if !self.check_next(TokenType::Semicolon) {
-            self.new_error("A Semicolon Was Expected After The Assignment Value", value.line);
+            self.new_error("A Semicolon Was Expected After The Assignment Value", identifier.line);
         } else {
             self.advance(); // Advance Past The Semicolon
         }
 
         ActStmt::AssignmentStatement(
-            AssgnStmt{
+            AssgnStmt {
                 identifier,
                 value,
             }
         )
+    }
+
+    fn expression(&mut self) -> Expression {
+        let lvalue = self.advance().clone();
+
+        if self.check_next(TokenType::Plus) || self.check_next(TokenType::Minus) || self.check_next(TokenType::Multiply) || self.check_next(TokenType::Divide) {
+            let op = self.advance();
+            let rvalue = self.advance();
+
+            Expression::BinaryExpression(
+                BinExpr {
+                    lvalue,
+                    operator: op,
+                    rvalue,
+                }
+            )
+        } else if lvalue.ttype == TokenType::Identifier {
+            return Expression::Identifier(lvalue);
+        } else {
+            return Expression::Number(lvalue);
+        }
     }
 
     fn peek(&mut self) -> Token {

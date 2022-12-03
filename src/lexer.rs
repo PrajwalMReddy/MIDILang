@@ -20,6 +20,7 @@ pub enum TokenType {
     Import, Tune, Var, Loop, Play, // Keywords
     Identifier, Number, // Data Tokens
     Equal, Colon, LeftBrace, RightBrace, Semicolon, // Punctuation
+    Plus, Minus, Multiply, Divide, // Operators
     Eof, Error, // Special Tokens
 }
 
@@ -53,11 +54,18 @@ impl Scanner {
         }
 
         match c {
+            // Punctuation
             '=' => self.make_token(TokenType::Equal),
             ':' => self.make_token(TokenType::Colon),
             '{' => self.make_token(TokenType::LeftBrace),
             '}' => self.make_token(TokenType::RightBrace),
             ';' => self.make_token(TokenType::Semicolon),
+
+            // Operators
+            '+' => self.make_token(TokenType::Plus),
+            '-' => self.make_token(TokenType::Minus),
+            '*' => self.make_token(TokenType::Multiply),
+            '/' => self.make_token(TokenType::Divide),
 
             _ => self.error_token(String::from("Unexpected Character"))
         }

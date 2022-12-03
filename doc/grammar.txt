@@ -28,7 +28,7 @@ tune_statement:
     | "tune" IDENTIFIER (":" IDENTIFIER*)? "{" statement* "}"
 
 variable_statement:
-    | "var" IDENTIFIER "=" NUMBER ";"
+    | "var" IDENTIFIER "=" expression ";"
 
 action_statement:
     | loop_statement
@@ -36,11 +36,19 @@ action_statement:
     | assignment_statement
 
 loop_statement:
-    | "loop" ":" NUMBER "{" statement* "}"
+    | "loop" ":" expression "{" statement* "}"
 
 play_statement:
-    | "play" ":" NOTE DURATION VELOCITY ";"
-    | "play" IDENTIFIER (":" NUMBER*)? ";"
+    | "play" ":" expression expression expression ";"
+    | "play" IDENTIFIER (":" expression*)? ";"
 
 assignment_statement:
-    | IDENTIFIER "=" NUMBER ";"
+    | IDENTIFIER "=" expression ";"
+
+expression:
+    | binary_expression
+    | IDENTIFIER
+    | NUMBER
+
+binary_expression:
+    | NUMBER ("+" | "-" | "*" | "/") NUMBER
