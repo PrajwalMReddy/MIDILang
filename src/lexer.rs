@@ -89,7 +89,7 @@ impl Scanner {
     }
 
     fn number(&mut self) -> Token {
-        while self.is_digit(self.peek()) || self.peek() == '.' {
+        while self.is_digit(self.peek()) {
             self.advance();
         }
 
@@ -107,11 +107,11 @@ impl Scanner {
                 '\n' => { self.line += 1; self.advance(); },
 
                 '/' => {
-                    if self.peek() == '/' {
+                    if self.peek_next() == '/' {
                         while self.peek() != '\n' && !self.is_at_end() {
                             self.advance();
                         }
-                    }
+                    } else { return; }
                 },
 
                 _ => { return; }
@@ -129,6 +129,14 @@ impl Scanner {
             '\0'
         } else {
             self.file[self.current]
+        }
+    }
+
+    fn peek_next(&self) -> char {
+        if self.is_at_end() {
+            '\0'
+        } else {
+            self.file[self.current + 1]
         }
     }
 

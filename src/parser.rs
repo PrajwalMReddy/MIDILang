@@ -298,6 +298,9 @@ impl Parser {
 
     fn new_error(&mut self, msg: &str, line: u32) {
         self.errors.add_error(String::from("Parser Error"), String::from(msg), line);
+
+        // Prevents Ghost Errors And Parsing Breakdowns
+        self.errors.display_if_has_errors();
     }
 }
 
