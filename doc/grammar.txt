@@ -33,14 +33,17 @@ variable_statement:
 action_statement:
     | loop_statement
     | play_statement
+    | note_statement
     | assignment_statement
 
 loop_statement:
     | "loop" ":" expression "{" statement* "}"
 
 play_statement:
-    | "play" ":" expression expression expression ";"
     | "play" IDENTIFIER (":" expression*)? ";"
+
+note_statement:
+    | "note" expression expression expression ";"
 
 assignment_statement:
     | IDENTIFIER "=" expression ";"
