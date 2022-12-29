@@ -5,6 +5,8 @@
 #include <unordered_map>
 
 #include "../ast/declaration/Tune.h"
+#include "TuneVar.h"
+#include "VariableVar.h"
 
 
 namespace MIDILang {
@@ -25,9 +27,15 @@ namespace MIDILang {
             void dropVariable(Token identifier);
             bool hasVariable(Token identifier);
 
+            // Other Functions
+            void dropAndDecrement();
+            void incrementScope();
+            void decrementScope();
+
         private:
-            std::unordered_map<std::string, Tune> tunes;
-            std::unordered_map<std::string, int> variables;
+            int scope;
+            std::unordered_map<std::string, TuneVar> tunes;
+            std::unordered_map<std::string, VariableVar> variables;
     };
 }
 

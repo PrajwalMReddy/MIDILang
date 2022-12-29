@@ -5,7 +5,7 @@
 
 #include "../ast/other/Program.h"
 #include "../lang/ErrorHandler.h"
-#include "../lang/SymbolTable.h"
+#include "../variable//SymbolTable.h"
 #include "../ast/ExprVisitor.h"
 #include "../ast/expression/Literal.h"
 #include "../ast/expression/VariableExpr.h"
@@ -36,6 +36,7 @@ namespace MIDILang {
             void trackChunk();
             void compileFile();
             void cleanUp();
+            void writeFile();
 
             // Other Visitor Functions
             std::any visitProgramNode(Program* node) override;

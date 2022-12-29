@@ -17,8 +17,8 @@ MIDILang::Program* MIDILang::Parser::programNode() {
 }
 
 MIDILang::Statement* MIDILang::Parser::statementNode(TokenType until) {
-    std::vector<Declaration*>* declarationStatements = new std::vector<Declaration*>();
-    std::vector<Action*>* actionStatements = new std::vector<Action*>();
+    auto* declarationStatements = new std::vector<Declaration*>();
+    auto* actionStatements = new std::vector<Action*>();
 
     while (!check(until) && !check(TK_EOF)) {
         if (matchAdvance(TK_TUNE)) declarationStatements->push_back(tuneNode());
@@ -26,7 +26,7 @@ MIDILang::Statement* MIDILang::Parser::statementNode(TokenType until) {
         else if (matchAdvance(TK_LOOP)) actionStatements->push_back(loopNode());
         else if (matchAdvance(TK_PLAY)) actionStatements->push_back(playNode());
         else if (matchAdvance(TK_NOTE)) actionStatements->push_back(noteNode());
-        else if (matchAdvance(TK_IDENTIFIER)) actionStatements->push_back(assignmentNode());
+        else if (peek().ttype == TK_IDENTIFIER) actionStatements->push_back(assignmentNode());
         else newError("Unexpected Token: " + peek().literal, peek().line);
     }
 
@@ -101,6 +101,7 @@ MIDILang::Assignment* MIDILang::Parser::assignmentNode() {
     if (!matchAdvance(TK_EQUAL)) newError("An Equals Sign Was Expected Before The Assignment Value", identifier.line);
     value = expressionNode();
 
+    if (!matchAdvance(TK_SEMICOLON)) newError("A Semicolon Was Expected After Assignment Expression", peek().line);
     return new Assignment(identifier, value);
 }
 
@@ -111,7 +112,18 @@ MIDILang::Expression* MIDILang::Parser::expressionNode() {
         Token op = advance();
         Token rvalue = advance();
 
-        return new Binary(lvalue, op.literal, rvalue);
+        Expression *lv, *rv;
+        if (lvalue.ttype == TK_IDENTIFIER) {
+            lv = new VariableExpr(lvalue);
+        } else {
+            lv = new Literal(lvalue);
+        } if (rvalue.ttype == TK_IDENTIFIER) {
+            rv = new VariableExpr(rvalue);
+        } else {
+            rv = new Literal(rvalue);
+        }
+
+        return new Binary(lv, op.literal, rv);
     } else if (lvalue.ttype == TK_IDENTIFIER) {
         return new VariableExpr(lvalue);
     } else {

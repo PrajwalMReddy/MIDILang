@@ -13,12 +13,7 @@ MIDILang::Compiler::Compiler(MIDILang::Program* program, std::string path, MIDIL
 void MIDILang::Compiler::compile() {
     headerChunk();
     trackChunk();
-
-    this->errors->displayIfHasErrors();
-
-    std::ofstream file;
-    file.open(this->path + ".mid", std::ios::out | std::ios::binary);
-    file.write((char*) &this->fileBytes[0], this->fileBytes.size());
+    writeFile();
 }
 
 void MIDILang::Compiler::headerChunk() {
@@ -77,6 +72,12 @@ void MIDILang::Compiler::cleanUp() {
     }
 }
 
+void MIDILang::Compiler::writeFile() {
+    std::ofstream file;
+    file.open(this->path + ".mid", std::ios::out | std::ios::binary);
+    file.write((char*) &this->fileBytes[0], this->fileBytes.size());
+}
+
 std::any MIDILang::Compiler::visitProgramNode(MIDILang::Program* node) {
     node->getStatements()->accept(*this);
     return nullptr;
@@ -113,18 +114,28 @@ std::any MIDILang::Compiler::visitAssignmentAction(Assignment* action) {
 
 std::any MIDILang::Compiler::visitLoopAction(Loop* action) {
     int iterations = std::any_cast<int>(action->getIterations()->accept(*this));
-    action->getStatements()->accept(*this);
+
+    this->symbolTable->incrementScope();
+    for (int i = 0; i < iterations; i++) {
+        action->getStatements()->accept(*this);
+        this->errors->displayIfHasErrors(); // Prevents The Error Message From Being Repeated
+    }
+    this->symbolTable->dropAndDecrement();
+
     return nullptr;
 }
 
 std::any MIDILang::Compiler::visitPlayAction(Play* action) {
     Tune tune = getTune(action->getTune());
+    if (tune.getStatement() == nullptr) return nullptr;
 
     if (tune.getParameters().size() != action->getArguments().size()) {
         newError("Tune " + tune.getName().literal + " Expected " + std::to_string(static_cast<int>(tune.getParameters().size())) + " Argument(s) But Received " + std::to_string(static_cast<int>(action->getArguments().size())), tune.getName().line);
+        return nullptr;
     }
 
-    if (tune.getParameters().size() != 0) {
+    this->symbolTable->incrementScope();
+    if (!tune.getParameters().empty()) {
         for (int i = 0; i < tune.getParameters().size(); i++) {
             Expression* expr = action->getArguments()[i];
             int value = std::any_cast<int>(expr->accept(*this));
@@ -133,6 +144,8 @@ std::any MIDILang::Compiler::visitPlayAction(Play* action) {
     }
 
     tune.getStatement()->accept(*this);
+    this->symbolTable->dropAndDecrement();
+
     return nullptr;
 }
 
@@ -176,8 +189,8 @@ std::any MIDILang::Compiler::visitNoteAction(Note* action) {
 }
 
 std::any MIDILang::Compiler::visitBinaryExpression(Binary* expression) {
-    int lvalue = std::any_cast<int>(expression->getLValue().accept(*this));
-    int rvalue = std::any_cast<int>(expression->getRValue().accept(*this));
+    int lvalue = std::any_cast<int>(expression->getLValue()->accept(*this));
+    int rvalue = std::any_cast<int>(expression->getRValue()->accept(*this));
 
     switch (expression->getOpType()[0]) {
         case '+': return lvalue + rvalue;
@@ -245,7 +258,11 @@ void MIDILang::Compiler::addTune(MIDILang::Token identifier, MIDILang::Tune tune
 }
 
 MIDILang::Tune MIDILang::Compiler::getTune(MIDILang::Token identifier) {
-    if (!this->symbolTable->hasTune(identifier)) newError("Tune " + identifier.literal + " Does Not Exist In This Scope", identifier.line);
+    if (!this->symbolTable->hasTune(identifier)) {
+        newError("Tune " + identifier.literal + " Does Not Exist In This Scope", identifier.line);
+        return { identifier, std::vector<Token>(), nullptr };
+    }
+
     return this->symbolTable->getTune(identifier);
 }
 
@@ -255,7 +272,11 @@ void MIDILang::Compiler::addVariable(MIDILang::Token identifier, int value) {
 }
 
 int MIDILang::Compiler::getVariable(MIDILang::Token identifier) {
-    if (!this->symbolTable->hasVariable(identifier)) newError("Variable " + identifier.literal + " Does Not Exist In This Scope", identifier.line);
+    if (!this->symbolTable->hasVariable(identifier)) {
+        newError("Variable " + identifier.literal + " Does Not Exist In This Scope", identifier.line);
+        return -1;
+    }
+
     return this->symbolTable->getVariable(identifier);
 }
 

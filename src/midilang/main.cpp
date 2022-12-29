@@ -11,12 +11,9 @@ int main(int argc, char* argv[]) {
     MIDILang::ErrorHandler* errors = new MIDILang::ErrorHandler(contents);
 
     // Compiler Pipeline
-    std::vector<MIDILang::Token> tokens = MIDILang::Lexer(contents, errors).lex();
-    errors->displayIfHasErrors();
-    MIDILang::Program* program = MIDILang::Parser(tokens, errors).parse();
-    errors->displayIfHasErrors();
-    MIDILang::Compiler(program, stem, errors).compile();
-    errors->displayIfHasErrors();
+    std::vector<MIDILang::Token> tokens = MIDILang::Lexer(contents, errors).lex(); errors->displayIfHasErrors();
+    MIDILang::Program* program = MIDILang::Parser(tokens, errors).parse(); errors->displayIfHasErrors();
+    MIDILang::Compiler(program, stem, errors).compile(); errors->displayIfHasErrors();
 
     std::cout << "\nSuccessfully Generated " << stem << ".mid" << std::endl;
     return 0;

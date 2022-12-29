@@ -9,17 +9,17 @@
 namespace MIDILang {
     class Binary: public Expression {
         public:
-            Binary(Literal lvalue, std::string opType, Literal rvalue);
+            Binary(Expression* lvalue, std::string opType, Expression* rvalue);
             std::any accept(ExprVisitor& visitor);
 
-            Literal getLValue();
+            Expression* getLValue();
             std::string getOpType();
-            Literal getRValue();
+            Expression* getRValue();
 
         private:
-            Literal lvalue;
+            Expression* lvalue;
             std::string opType;
-            Literal rvalue;
+            Expression* rvalue;
     };
 }
 
