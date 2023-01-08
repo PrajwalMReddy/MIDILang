@@ -1,0 +1,34 @@
+// --------- Declarations ---------
+
+var c4 = 60;
+var cs4 = 61;
+var d4 = 62;
+var ds4 = 63;
+var e4 = 64;
+var f4 = 65;
+var fs4 = 66;
+var g4 = 67;
+var gs4 = 68;
+var a4 = 69;
+var as4 = 70;
+var b4 = 71;
+
+var sec0_25 = 49;
+var sec0_5 = 98;
+var sec0_75 = 147;
+var sec1 = 196;
+var sec1_25 = 245;
+var sec1_5 = 294;
+var sec1_75 = 343;
+var sec2 = 392;
+
+var pppp = 8;
+var ppp = 20;
+var pp = 31;
+var p = 42;
+var mp = 53;
+var mf = 64;
+var f = 80;
+var ff = 96;
+var fff = 112;
+var ffff = 127;
