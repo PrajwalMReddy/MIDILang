@@ -67,7 +67,7 @@ void MIDILang::SymbolTable::dropAndDecrement() {
 
     // Searching For All Variables To Drop
     for (auto& var: this->variables) {
-        if (var.second.getScope() == this->scope) tuneNames.push_back(var.first);
+        if (var.second.getScope() == this->scope) varNames.push_back(var.first);
     }
 
     // Dropping All Marked Tunes
@@ -75,7 +75,7 @@ void MIDILang::SymbolTable::dropAndDecrement() {
         this->tunes.erase(tuneName);
     }
 
-    // Dropping All Marked Tunes
+    // Dropping All Marked Variables
     for (auto& varName: varNames) {
         this->variables.erase(varName);
     }
