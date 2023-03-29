@@ -108,19 +108,23 @@ std::any MIDILang::Compiler::visitVariableDeclaration(VariableDecl* declaration)
 
 std::any MIDILang::Compiler::visitAssignmentAction(Assignment* action) {
     int value = std::any_cast<int>(action->getExpr()->accept(*this));
-    reassignVariable(action->getName(), value);
+    int scope = getVariableScope(action->getName());
+
+    reassignVariable(action->getName(), value, scope);
     return nullptr;
 }
 
 std::any MIDILang::Compiler::visitLoopAction(Loop* action) {
     int iterations = std::any_cast<int>(action->getIterations()->accept(*this));
 
-    this->symbolTable->incrementScope();
     for (int i = 0; i < iterations; i++) {
+        this->symbolTable->incrementScope();
         action->getStatements()->accept(*this);
-        this->errors->displayIfHasErrors(); // Prevents The Error Message From Being Repeated
+
+        // Prevents The Error Message From Being Repeated
+        this->errors->displayIfHasErrors();
+        this->symbolTable->dropAndDecrement();
     }
-    this->symbolTable->dropAndDecrement();
 
     return nullptr;
 }
@@ -280,8 +284,17 @@ int MIDILang::Compiler::getVariable(MIDILang::Token identifier) {
     return this->symbolTable->getVariable(identifier);
 }
 
-void MIDILang::Compiler::reassignVariable(MIDILang::Token identifier, int value) {
-    bool result = this->symbolTable->reassignVariable(identifier, value);
+int MIDILang::Compiler::getVariableScope(MIDILang::Token identifier) {
+    if (!this->symbolTable->hasVariable(identifier)) {
+        newError("Variable " + identifier.literal + " Does Not Exist In This Scope", identifier.line);
+        return -1;
+    }
+
+    return this->symbolTable->getVariableScope(identifier);
+}
+
+void MIDILang::Compiler::reassignVariable(MIDILang::Token identifier, int value, int scope) {
+    bool result = this->symbolTable->reassignVariable(identifier, value, scope);
     if (!result) newError("Variable " + identifier.literal + " Does Not Exist In This Scope", identifier.line);
 }
 

@@ -23,7 +23,8 @@ namespace MIDILang {
             // Variable Functions
             bool addVariable(Token identifier, int value);
             int getVariable(Token identifier);
-            bool reassignVariable(Token identifier, int value);
+            int getVariableScope(Token identifier);
+            bool reassignVariable(Token identifier, int value, int scope);
             void dropVariable(Token identifier);
             bool hasVariable(Token identifier);
 

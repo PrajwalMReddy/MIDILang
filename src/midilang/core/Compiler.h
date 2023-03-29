@@ -62,7 +62,8 @@ namespace MIDILang {
             Tune getTune(Token identifier);
             void addVariable(Token identifier, int value);
             int getVariable(Token identifier);
-            void reassignVariable(Token identifier, int value);
+            int getVariableScope(Token identifier);
+            void reassignVariable(Token identifier, int value, int scope);
 
             // Helper Functions
             std::vector<unsigned char> intToVLE(int duration, int line);

@@ -38,11 +38,15 @@ int MIDILang::SymbolTable::getVariable(MIDILang::Token identifier) {
     return this->variables.at(identifier.literal).getValue();
 }
 
-bool MIDILang::SymbolTable::reassignVariable(MIDILang::Token identifier, int value) {
+int MIDILang::SymbolTable::getVariableScope(MIDILang::Token identifier) {
+    return this->variables.at(identifier.literal).getScope();
+}
+
+bool MIDILang::SymbolTable::reassignVariable(MIDILang::Token identifier, int value, int scope) {
     if (this->variables.find(identifier.literal) == this->variables.end()) return false;
 
     this->variables.erase(identifier.literal);
-    this->variables.insert({ identifier.literal, { value, this->scope } });
+    this->variables.insert({ identifier.literal, { value, scope } });
     return true;
 }
 
