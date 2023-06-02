@@ -4,7 +4,11 @@
 
 namespace MIDILang {
     enum TokenType {
-        TK_IMPORT, TK_TUNE, TK_VAR, TK_LOOP, TK_PLAY, TK_NOTE, // Keywords
+        // Keywords
+        TK_IMPORT, TK_TUNE, TK_VAR,
+        TK_LOOP, TK_IF, TK_ELSE,
+        TK_PLAY, TK_NOTE,
+
         TK_IDENTIFIER, TK_NUMBER, // Data Tokens
         TK_EQUAL, TK_COLON, TK_LEFT_BRACE, TK_RIGHT_BRACE, TK_SEMICOLON, // Punctuation
         TK_PLUS, TK_MINUS, TK_MULTIPLY, TK_DIVIDE, // Operators

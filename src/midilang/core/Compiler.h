@@ -12,6 +12,7 @@
 #include "../ast/expression/Binary.h"
 #include "../ast/declaration/VariableDecl.h"
 #include "../ast/action/Assignment.h"
+#include "../ast/action/If.h"
 #include "../ast/action/Play.h"
 #include "../ast/action/Note.h"
 #include "../ast/action/Loop.h"
@@ -48,6 +49,7 @@ namespace MIDILang {
 
             // Action Visitor Functions
             std::any visitAssignmentAction(Assignment* action) override;
+            std::any visitIfAction(If* action) override;
             std::any visitLoopAction(Loop* action) override;
             std::any visitPlayAction(Play* action) override;
             std::any visitNoteAction(Note* action) override;

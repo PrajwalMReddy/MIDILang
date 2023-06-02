@@ -114,6 +114,22 @@ std::any MIDILang::Compiler::visitAssignmentAction(Assignment* action) {
     return nullptr;
 }
 
+std::any MIDILang::Compiler::visitIfAction(MIDILang::If* action) {
+    int expression = std::any_cast<int>(action->getCondition()->accept(*this));
+
+    if (expression) {
+        this->symbolTable->incrementScope();
+        action->getIfStatements()->accept(*this);
+        this->symbolTable->dropAndDecrement();
+    } else if (action->hasElseCondition()) {
+        this->symbolTable->incrementScope();
+        action->getElseStatements()->accept(*this);
+        this->symbolTable->dropAndDecrement();
+    }
+
+    return nullptr;
+}
+
 std::any MIDILang::Compiler::visitLoopAction(Loop* action) {
     int iterations = std::any_cast<int>(action->getIterations()->accept(*this));
 

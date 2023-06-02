@@ -32,12 +32,16 @@ variable_statement:
 
 action_statement:
     | loop_statement
+    | if_statement
     | play_statement
     | note_statement
     | assignment_statement
 
 loop_statement:
     | "loop" ":" expression "{" statement* "}"
+
+if_statement:
+    | "if" ":" expression "{" statement* "}" ( "else" "{" statement* "}" )?
 
 play_statement:
     | "play" IDENTIFIER (":" expression*)? ";"

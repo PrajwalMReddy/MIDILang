@@ -24,6 +24,7 @@ MIDILang::Statement* MIDILang::Parser::statementNode(TokenType until) {
         if (matchAdvance(TK_TUNE)) declarationStatements->push_back(tuneNode());
         else if (matchAdvance(TK_VAR)) declarationStatements->push_back(variableDeclarationNode());
         else if (matchAdvance(TK_LOOP)) actionStatements->push_back(loopNode());
+        else if (matchAdvance(TK_IF)) actionStatements->push_back(ifNode());
         else if (matchAdvance(TK_PLAY)) actionStatements->push_back(playNode());
         else if (matchAdvance(TK_NOTE)) actionStatements->push_back(noteNode());
         else if (peek().ttype == TK_IDENTIFIER) actionStatements->push_back(assignmentNode());
@@ -70,6 +71,25 @@ MIDILang::Loop* MIDILang::Parser::loopNode() {
     if (!matchAdvance(TK_RIGHT_BRACE)) newError("A Closing Brace Was Expected After The Loop Block", peek().line);
 
     return new Loop(iterations, statements);
+}
+
+MIDILang::If* MIDILang::Parser::ifNode() {
+    Expression* condition;
+    Statement* ifStatements;
+    Statement* elseStatements = nullptr;
+
+    if (!matchAdvance(TK_COLON)) newError("A Colon Was Expected After The If Keyword", peek().line);
+    condition = expressionNode();
+    if (!matchAdvance(TK_LEFT_BRACE)) newError("An Opening Brace Was Expected Before The If Block", peek().line);
+    ifStatements = statementNode(TK_RIGHT_BRACE);
+    if (!matchAdvance(TK_RIGHT_BRACE)) newError("A Closing Brace Was Expected After The If Block", peek().line);
+    if (matchAdvance(TK_ELSE)) {
+        if (!matchAdvance(TK_LEFT_BRACE)) newError("An Opening Brace Was Expected Before The Else Block", peek().line);
+        elseStatements = statementNode(TK_RIGHT_BRACE);
+        if (!matchAdvance(TK_RIGHT_BRACE)) newError("A Closing Brace Was Expected After The Else Block", peek().line);
+    }
+
+    return new If(condition, ifStatements, elseStatements);
 }
 
 MIDILang::Play* MIDILang::Parser::playNode() {

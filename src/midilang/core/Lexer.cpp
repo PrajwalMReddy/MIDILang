@@ -56,7 +56,9 @@ MIDILang::Token MIDILang::Lexer::keyword() {
         advance();
     }
 
-    if (currentLiteral() == "import") return makeToken(TK_IMPORT);
+    if (currentLiteral() == "else") return makeToken(TK_ELSE);
+    else if (currentLiteral() == "if") return makeToken(TK_IF);
+    else if (currentLiteral() == "import") return makeToken(TK_IMPORT);
     else if (currentLiteral() == "loop") return makeToken(TK_LOOP);
     else if (currentLiteral() == "note") return makeToken(TK_NOTE);
     else if (currentLiteral() == "play") return makeToken(TK_PLAY);
