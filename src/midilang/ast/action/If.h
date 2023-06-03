@@ -8,19 +8,24 @@
 namespace MIDILang {
     class If: public Action {
         public:
-            If(Expression* condition, Statement* ifStatements, Statement* elseStatements);
+            If(Expression* condition, Statement* ifStatements, Statement* elseStatements, If* nestedIfStatements);
             std::any accept(ActVisitor& visitor);
 
             Expression* getCondition();
             Statement* getIfStatements();
+
             Statement* getElseStatements();
+            If* getNestedIfStatements();
 
             bool hasElseCondition();
+            bool hasNestedIf();
 
         private:
             Expression* condition;
             Statement* ifStatements;
+
             Statement* elseStatements;
+            If* nestedIfStatements;
     };
 }
 

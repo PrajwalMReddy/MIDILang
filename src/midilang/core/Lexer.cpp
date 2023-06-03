@@ -57,11 +57,13 @@ MIDILang::Token MIDILang::Lexer::keyword() {
     }
 
     if (currentLiteral() == "else") return makeToken(TK_ELSE);
+    else if (currentLiteral() == "false") return makeBoolToken(false);
     else if (currentLiteral() == "if") return makeToken(TK_IF);
     else if (currentLiteral() == "import") return makeToken(TK_IMPORT);
     else if (currentLiteral() == "loop") return makeToken(TK_LOOP);
     else if (currentLiteral() == "note") return makeToken(TK_NOTE);
     else if (currentLiteral() == "play") return makeToken(TK_PLAY);
+    else if (currentLiteral() == "true") return makeBoolToken(true);
     else if (currentLiteral() == "tune") return makeToken(TK_TUNE);
     else if (currentLiteral() == "var") return makeToken(TK_VAR);
     else return makeToken(TK_IDENTIFIER);
@@ -135,6 +137,14 @@ MIDILang::Token MIDILang::Lexer::makeToken(MIDILang::TokenType ttype) {
     return Token {
         ttype,
         currentLiteral(),
+        this->line,
+    };
+}
+
+MIDILang::Token MIDILang::Lexer::makeBoolToken(bool value) {
+    return Token {
+        TK_NUMBER,
+        value ? "1" : "0",
         this->line,
     };
 }

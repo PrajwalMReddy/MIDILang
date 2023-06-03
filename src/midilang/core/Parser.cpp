@@ -76,7 +76,9 @@ MIDILang::Loop* MIDILang::Parser::loopNode() {
 MIDILang::If* MIDILang::Parser::ifNode() {
     Expression* condition;
     Statement* ifStatements;
+
     Statement* elseStatements = nullptr;
+    If* nestedIfStatements = nullptr;
 
     if (!matchAdvance(TK_COLON)) newError("A Colon Was Expected After The If Keyword", peek().line);
     condition = expressionNode();
@@ -84,12 +86,16 @@ MIDILang::If* MIDILang::Parser::ifNode() {
     ifStatements = statementNode(TK_RIGHT_BRACE);
     if (!matchAdvance(TK_RIGHT_BRACE)) newError("A Closing Brace Was Expected After The If Block", peek().line);
     if (matchAdvance(TK_ELSE)) {
-        if (!matchAdvance(TK_LEFT_BRACE)) newError("An Opening Brace Was Expected Before The Else Block", peek().line);
-        elseStatements = statementNode(TK_RIGHT_BRACE);
-        if (!matchAdvance(TK_RIGHT_BRACE)) newError("A Closing Brace Was Expected After The Else Block", peek().line);
+        if (matchAdvance(TK_IF)) {
+            nestedIfStatements = ifNode();
+        } else {
+            if (!matchAdvance(TK_LEFT_BRACE)) newError("An Opening Brace Was Expected Before The Else Block", peek().line);
+            elseStatements = statementNode(TK_RIGHT_BRACE);
+            if (!matchAdvance(TK_RIGHT_BRACE)) newError("A Closing Brace Was Expected After The Else Block", peek().line);
+        }
     }
 
-    return new If(condition, ifStatements, elseStatements);
+    return new If(condition, ifStatements, elseStatements, nestedIfStatements);
 }
 
 MIDILang::Play* MIDILang::Parser::playNode() {

@@ -41,7 +41,7 @@ loop_statement:
     | "loop" ":" expression "{" statement* "}"
 
 if_statement:
-    | "if" ":" expression "{" statement* "}" ( "else" "{" statement* "}" )?
+    | "if" ":" expression "{" statement* "}" ("else" (if_statement | "{" statement* "}"))?
 
 play_statement:
     | "play" IDENTIFIER (":" expression*)? ";"
@@ -56,6 +56,7 @@ expression:
     | binary_expression
     | IDENTIFIER
     | NUMBER
+    | BOOLEAN
 
 binary_expression:
     | NUMBER ("+" | "-" | "*" | "/") NUMBER

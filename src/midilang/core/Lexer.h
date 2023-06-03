@@ -28,6 +28,7 @@ namespace MIDILang {
             bool isAtEnd();
 
             Token makeToken(TokenType ttype);
+            Token makeBoolToken(bool value);
             Token errorToken(std::string message);
 
             std::string file;

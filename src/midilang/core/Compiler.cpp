@@ -122,9 +122,15 @@ std::any MIDILang::Compiler::visitIfAction(MIDILang::If* action) {
         action->getIfStatements()->accept(*this);
         this->symbolTable->dropAndDecrement();
     } else if (action->hasElseCondition()) {
-        this->symbolTable->incrementScope();
-        action->getElseStatements()->accept(*this);
-        this->symbolTable->dropAndDecrement();
+        if (action->hasNestedIf()) {
+            this->symbolTable->incrementScope();
+            action->getNestedIfStatements()->accept(*this);
+            this->symbolTable->dropAndDecrement();
+        } else {
+            this->symbolTable->incrementScope();
+            action->getElseStatements()->accept(*this);
+            this->symbolTable->dropAndDecrement();
+        }
     }
 
     return nullptr;
