@@ -35,17 +35,36 @@ MIDILang::Token MIDILang::Lexer::scanToken() {
 
     switch (c) {
         // Punctuation
-        case '=': return makeToken(TK_EQUAL);
         case ':': return makeToken(TK_COLON);
+        case '(': return makeToken(TK_LEFT_PAR);
+        case ')': return makeToken(TK_RIGHT_PAR);
         case '{': return makeToken(TK_LEFT_BRACE);
         case '}': return makeToken(TK_RIGHT_BRACE);
         case ';': return makeToken(TK_SEMICOLON);
 
         // Operators
+        case '=': {
+            if (peek() == '=') { advance(); return makeToken(TK_COMPARE_EQUAL); }
+            else return makeToken(TK_EQUAL);
+        }
+        case '!': {
+            if (peek() == '=') { advance(); return makeToken(TK_COMPARE_NOT_EQUAL); }
+            else return makeToken(TK_NOT);
+        }
+        case '>': {
+            if (peek() == '=') { advance(); return makeToken(TK_GREATER_EQUAL); }
+            else return makeToken(TK_GREATER);
+        }
+        case '<': {
+            if (peek() == '=') { advance(); return makeToken(TK_LESSER_EQUAL); }
+            else return makeToken(TK_LESSER);
+        }
+
         case '+': return makeToken(TK_PLUS);
         case '-': return makeToken(TK_MINUS);
         case '*': return makeToken(TK_MULTIPLY);
         case '/': return makeToken(TK_DIVIDE);
+        case '%': return makeToken(TK_MODULUS);
 
         default: return errorToken("Unexpected Character");
     }

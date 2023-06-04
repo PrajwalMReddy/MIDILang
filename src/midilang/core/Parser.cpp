@@ -132,28 +132,78 @@ MIDILang::Assignment* MIDILang::Parser::assignmentNode() {
 }
 
 MIDILang::Expression* MIDILang::Parser::expressionNode() {
-    Token lvalue = advance();
+    return equalityNode();
+}
 
-    if (check(TK_PLUS) || check(TK_MINUS) || check(TK_MULTIPLY) || check(TK_DIVIDE)) {
+MIDILang::Expression* MIDILang::Parser::equalityNode() {
+    Expression* expression = comparisonNode();
+
+    while (check(TK_COMPARE_EQUAL) || check(TK_COMPARE_NOT_EQUAL)) {
         Token op = advance();
-        Token rvalue = advance();
+        Expression* rvalue = comparisonNode();
+        expression = new Binary(expression, op.literal, rvalue);
+    }
 
-        Expression *lv, *rv;
-        if (lvalue.ttype == TK_IDENTIFIER) {
-            lv = new VariableExpr(lvalue);
-        } else {
-            lv = new Literal(lvalue);
-        } if (rvalue.ttype == TK_IDENTIFIER) {
-            rv = new VariableExpr(rvalue);
-        } else {
-            rv = new Literal(rvalue);
-        }
+    return expression;
+}
 
-        return new Binary(lv, op.literal, rv);
-    } else if (lvalue.ttype == TK_IDENTIFIER) {
-        return new VariableExpr(lvalue);
+MIDILang::Expression* MIDILang::Parser::comparisonNode() {
+    Expression* expression = termNode();
+
+    while (check(TK_GREATER) || check(TK_GREATER_EQUAL) || check(TK_LESSER) || check(TK_LESSER_EQUAL)) {
+        Token op = advance();
+        Expression* rvalue = termNode();
+        expression = new Binary(expression, op.literal, rvalue);
+    }
+
+    return expression;
+}
+
+MIDILang::Expression* MIDILang::Parser::termNode() {
+    Expression* expression = factorNode();
+
+    while (check(TK_PLUS) || check(TK_MINUS)) {
+        Token op = advance();
+        Expression* rvalue = factorNode();
+        expression = new Binary(expression, op.literal, rvalue);
+    }
+
+    return expression;
+}
+
+MIDILang::Expression* MIDILang::Parser::factorNode() {
+    Expression* expression = unaryNode();
+
+    while (check(TK_MULTIPLY) || check(TK_DIVIDE) || check(TK_MODULUS)) {
+        Token op = advance();
+        Expression* rvalue = unaryNode();
+        expression = new Binary(expression, op.literal, rvalue);
+    }
+
+    return expression;
+}
+
+MIDILang::Expression* MIDILang::Parser::unaryNode() {
+    if (check(TK_NOT) || check(TK_MINUS)) {
+        Token op = advance();
+        Expression* rvalue = unaryNode();
+        return new Unary(op.literal, rvalue);
+    } else if (matchAdvance(TK_PLUS)) {
+        return unaryNode();
     } else {
-        return new Literal(lvalue);
+        return primaryNode();
+    }
+}
+
+MIDILang::Expression* MIDILang::Parser::primaryNode() {
+    if (check(TK_IDENTIFIER)) {
+        return new VariableExpr(advance());
+    } else if (check(TK_NUMBER)) {
+        return new Literal(advance());
+    } else if (matchAdvance(TK_LEFT_PAR)) {
+        Expression* expression = expressionNode();
+        if (!matchAdvance(TK_RIGHT_PAR)) newError("A Closing Parenthesis Was Expected After The Parenthesized Expression", peek().line);
+        return new Grouping(expression);
     }
 }
 

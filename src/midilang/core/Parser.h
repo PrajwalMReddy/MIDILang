@@ -18,6 +18,8 @@
 #include "../ast/declaration/VariableDecl.h"
 #include "../ast/expression/Binary.h"
 #include "../ast/expression/Literal.h"
+#include "../ast/expression/Grouping.h"
+#include "../ast/expression/Unary.h"
 #include "../ast/expression/VariableExpr.h"
 #include "../ast/other/Program.h"
 #include "../ast/other/Statement.h"
@@ -41,7 +43,14 @@ namespace MIDILang {
             Play* playNode();
             Note* noteNode();
             Assignment* assignmentNode();
+
             Expression* expressionNode();
+            Expression* equalityNode();
+            Expression* comparisonNode();
+            Expression* termNode();
+            Expression* factorNode();
+            Expression* unaryNode();
+            Expression* primaryNode();
 
         private:
             std::vector<Token> tokens;

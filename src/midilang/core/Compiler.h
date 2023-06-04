@@ -8,6 +8,8 @@
 #include "../variable//SymbolTable.h"
 #include "../ast/ExprVisitor.h"
 #include "../ast/expression/Literal.h"
+#include "../ast/expression/Unary.h"
+#include "../ast/expression/Grouping.h"
 #include "../ast/expression/VariableExpr.h"
 #include "../ast/expression/Binary.h"
 #include "../ast/declaration/VariableDecl.h"
@@ -56,7 +58,9 @@ namespace MIDILang {
 
             // Expression Visitor Functions
             std::any visitBinaryExpression(Binary* expression) override;
+            std::any visitGroupingExpression(Grouping* expression) override;
             std::any visitLiteralExpression(Literal* expression) override;
+            std::any visitUnaryExpression(Unary* expression) override;
             std::any visitVariableExpression(VariableExpr* expression) override;
 
             // Symbol Table API

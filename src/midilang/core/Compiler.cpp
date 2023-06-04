@@ -184,6 +184,10 @@ std::any MIDILang::Compiler::visitNoteAction(Note* action) {
         newError("Note Value Cannot Be More Than 127", action->getLine());
     } if (velocity > 127) {
         newError("Velocity Value Cannot Be More Than 127", action->getLine());
+    } if (note < 0) {
+        newError("Note Value Cannot Be Less Than 0", action->getLine());
+    } if (velocity < 0) {
+        newError("Velocity Value Cannot Be Less Than 0", action->getLine());
     }
 
     std::vector<unsigned char> durationU8 = intToVLE(duration, action->getLine());
@@ -219,16 +223,41 @@ std::any MIDILang::Compiler::visitBinaryExpression(Binary* expression) {
     int rvalue = std::any_cast<int>(expression->getRValue()->accept(*this));
 
     switch (expression->getOpType()[0]) {
+        case '=': return (int) (lvalue == rvalue);
+        case '!': return (int) (lvalue != rvalue);
+        case '>': {
+            if (expression->getOpType()[1] == '=') return (int) (lvalue >= rvalue);
+            else return (int) (lvalue > rvalue);
+        }
+        case '<': {
+            if (expression->getOpType()[1] == '=') return (int) (lvalue <= rvalue);
+            else return (int) (lvalue < rvalue);
+        }
         case '+': return lvalue + rvalue;
         case '-': return lvalue - rvalue;
         case '*': return lvalue * rvalue;
         case '/': return lvalue / rvalue;
+        case '%': return lvalue % rvalue;
         default: return 0;
     }
 }
 
+std::any MIDILang::Compiler::visitGroupingExpression(MIDILang::Grouping* expression) {
+    return expression->getValue()->accept(*this);
+}
+
 std::any MIDILang::Compiler::visitLiteralExpression(Literal* expression) {
     return std::stoi(expression->getValue().literal);
+}
+
+std::any MIDILang::Compiler::visitUnaryExpression(MIDILang::Unary *expression) {
+    int value = std::any_cast<int>(expression->getValue()->accept(*this));
+
+    switch (expression->getOpType()[0]) {
+        case '!': return (! value);
+        case '-': return (- value);
+        default: return 0;
+    }
 }
 
 std::any MIDILang::Compiler::visitVariableExpression(VariableExpr* expression) {
@@ -240,6 +269,10 @@ std::vector<unsigned char> MIDILang::Compiler::intToVLE(int duration, int line) 
 
     if (duration > ((int) 0x0fffffff)) {
         newError("Duration Value Cannot Be More Than 268435455", line);
+        subResult.push_back(0);
+        return subResult;
+    } else if (duration < 0) {
+        newError("Duration Value Cannot Be Less Than 0", line);
         subResult.push_back(0);
         return subResult;
     }
