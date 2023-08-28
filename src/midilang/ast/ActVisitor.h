@@ -12,6 +12,7 @@ namespace MIDILang {
             virtual std::any visitLoopAction(class Loop* action) = 0;
             virtual std::any visitPlayAction(class Play* action) = 0;
             virtual std::any visitNoteAction(class Note* action) = 0;
+            virtual std::any visitWhileAction(class While* action) = 0;
     };
 }
 

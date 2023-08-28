@@ -218,6 +218,23 @@ std::any MIDILang::Compiler::visitNoteAction(Note* action) {
     return nullptr;
 }
 
+std::any MIDILang::Compiler::visitWhileAction(While* action) {
+    int condition = std::any_cast<int>(action->getCondition()->accept(*this));
+
+    while (condition) {
+        this->symbolTable->incrementScope();
+        action->getStatements()->accept(*this);
+
+        // Prevents The Error Message From Being Repeated
+        this->errors->displayIfHasErrors();
+        this->symbolTable->dropAndDecrement();
+
+        condition = std::any_cast<int>(action->getCondition()->accept(*this));
+    }
+
+    return nullptr;
+}
+
 std::any MIDILang::Compiler::visitBinaryExpression(Binary* expression) {
     int lvalue = std::any_cast<int>(expression->getLValue()->accept(*this));
     int rvalue = std::any_cast<int>(expression->getRValue()->accept(*this));

@@ -6,7 +6,7 @@ namespace MIDILang {
     enum TokenType {
         // Keywords
         TK_IMPORT, TK_TUNE, TK_VAR,
-        TK_LOOP, TK_IF, TK_ELSE,
+        TK_LOOP, TK_WHILE, TK_IF, TK_ELSE,
         TK_PLAY, TK_NOTE,
 
         TK_IDENTIFIER, TK_NUMBER, // Data Tokens

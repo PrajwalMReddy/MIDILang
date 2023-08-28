@@ -6,11 +6,11 @@ MIDILang has the same programming constructs as general purpose languages, inclu
 - Variable Declarations
 - Assignments
 - If/Else Statements
-- Loops
+- While/N Loops
 - Imports
 
 Moreover, MIDILang also features several music specific features such as:
 - Note Statements
 - Tune Blocks
 
-### Current Version: 0.1.2
+### Current Version: 0.1.3

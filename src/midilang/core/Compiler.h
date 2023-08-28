@@ -18,6 +18,7 @@
 #include "../ast/action/Play.h"
 #include "../ast/action/Note.h"
 #include "../ast/action/Loop.h"
+#include "../ast/action/While.h"
 
 
 namespace MIDILang {
@@ -55,6 +56,7 @@ namespace MIDILang {
             std::any visitLoopAction(Loop* action) override;
             std::any visitPlayAction(Play* action) override;
             std::any visitNoteAction(Note* action) override;
+            std::any visitWhileAction(While* action) override;
 
             // Expression Visitor Functions
             std::any visitBinaryExpression(Binary* expression) override;

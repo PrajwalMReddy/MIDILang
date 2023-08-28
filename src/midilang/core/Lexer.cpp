@@ -85,6 +85,7 @@ MIDILang::Token MIDILang::Lexer::keyword() {
     else if (currentLiteral() == "true") return makeBoolToken(true);
     else if (currentLiteral() == "tune") return makeToken(TK_TUNE);
     else if (currentLiteral() == "var") return makeToken(TK_VAR);
+    else if (currentLiteral() == "while") return makeToken(TK_WHILE);
     else return makeToken(TK_IDENTIFIER);
 }
 

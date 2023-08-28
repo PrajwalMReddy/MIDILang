@@ -11,6 +11,7 @@
 #include "../ast/Other.h"
 #include "../ast/action/Assignment.h"
 #include "../ast/action/Loop.h"
+#include "../ast/action/While.h"
 #include "../ast/action/If.h"
 #include "../ast/action/Note.h"
 #include "../ast/action/Play.h"
@@ -39,6 +40,7 @@ namespace MIDILang {
             Tune* tuneNode();
             VariableDecl* variableDeclarationNode();
             Loop* loopNode();
+            While* whileNode();
             If* ifNode();
             Play* playNode();
             Note* noteNode();
