@@ -41,7 +41,13 @@ MIDILang::Tune* MIDILang::Parser::tuneNode() {
     Statement* statements;
 
     if (identifier.ttype != TK_IDENTIFIER) newError("Tune Names Must Be Identifiers", identifier.line);
-    if (matchAdvance(TK_COLON)) while (!check(TK_LEFT_BRACE) && !check(TK_EOF)) parameters.push_back(advance());
+    if (check(TK_COLON) && (peekN(1).ttype == TK_LEFT_BRACE)) newError("At Least One Parameter Expected After Colon", identifier.line);
+
+    if (matchAdvance(TK_COLON)) while (!check(TK_LEFT_BRACE) && !check(TK_EOF)) {
+        parameters.push_back(advance());
+        if (parameters.back().ttype != TK_IDENTIFIER) newError("Tune Parameter Must Be An Identifier", identifier.line);
+    }
+
     if (!matchAdvance(TK_LEFT_BRACE)) newError("An Opening Brace Was Expected Before The Tune Block", identifier.line);
     statements = statementNode(TK_RIGHT_BRACE);
     if (!matchAdvance(TK_RIGHT_BRACE)) newError("A Closing Brace Was Expected After The Tune Block", identifier.line);
@@ -223,6 +229,10 @@ MIDILang::Expression* MIDILang::Parser::primaryNode() {
 
 MIDILang::Token MIDILang::Parser::peek() {
     return this->tokens[this->current];
+}
+
+MIDILang::Token MIDILang::Parser::peekN(int n) {
+    return this->tokens[this->current + n];
 }
 
 bool MIDILang::Parser::check(TokenType ttype) {

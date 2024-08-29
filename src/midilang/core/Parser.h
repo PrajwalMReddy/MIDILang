@@ -63,6 +63,7 @@ namespace MIDILang {
             // Helper Functions
 
             Token peek();
+            Token peekN(int n);
             bool check(TokenType ttype);
 
             Token advance();
